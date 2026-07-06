@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Organograma — automação @umpaisdemerda (fluxo + infraestrutura)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E1116;--panel:#151A21;--card:#171D26;--cardhi:#1C232E;
+    --ink:#E8EDF2;--ink2:#C4CDD8;--warm:#9AA7B5;--dim:#6C7885;
+    --cyan:#6BD3C8;--amber:#E8B366;--red:#E07A6E;--violet:#9B8CE0;
+    --line:rgba(160,180,200,.12);--line2:rgba(160,180,200,.22);--line3:rgba(107,211,200,.4);
+    --serif:'Fraunces',Georgia,serif;--sans:'Instrument Sans',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;padding:40px 18px 70px}
+  .wrap{max-width:680px;margin:0 auto}
+  .head{text-align:center;margin-bottom:6px}
+  .kick{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan);font-weight:600}
+  h1{font-family:var(--serif);font-weight:700;font-size:31px;letter-spacing:-.02em;margin:8px 0 6px;line-height:1.1}
+  .sub{color:var(--warm);font-family:var(--serif);font-style:italic;font-size:15.5px}
+  .meta{margin-top:10px;font-size:11px;color:var(--dim);letter-spacing:.03em}
+  .status{margin:18px 0 6px;font-size:12.5px;color:var(--ink2);background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:12px;padding:13px 16px}
+  .status b{color:var(--amber)}
+  .status .on{color:var(--cyan);font-weight:600}
+  .howto{margin:12px 0 6px;font-size:12.5px;color:var(--ink2);background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);border-radius:12px;padding:13px 16px}
+  .howto b{color:var(--ink)}
+  .howto code{font-family:var(--mono);font-size:11.5px;color:var(--amber)}
+  .flow{margin-top:22px;display:flex;flex-direction:column;align-items:stretch;gap:0}
+  .node{background:var(--card);border:1px solid var(--line2);border-radius:15px;padding:15px 18px;box-shadow:0 20px 44px -30px #000}
+  .node .step{font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--cyan)}
+  .node h3{font-family:var(--serif);font-weight:600;font-size:19px;margin:3px 0 5px}
+  .node .desc{font-size:13.5px;color:var(--ink2)}
+  .infra{margin-top:12px;border-top:1px dashed var(--line2);padding-top:11px}
+  .infra .lbl{font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:7px}
+  .grid{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:12.5px}
+  .grid dt{color:var(--warm);font-weight:600;font-family:var(--sans)}
+  .grid dd{color:var(--ink);font-family:var(--mono);font-size:11.5px;word-break:break-word}
+  .grid dd.name{font-family:var(--sans);font-size:12.5px}
+  .warn{color:var(--amber)}
+  .arrow{align-self:center;width:2px;height:34px;background:linear-gradient(180deg,var(--line3),var(--line2));position:relative;margin:2px 0}
+  .arrow::after{content:"";position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--line3)}
+  .arrow span{position:absolute;left:14px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:11.5px;color:var(--dim);font-family:var(--mono)}
+  .arrow span b{color:var(--cyan);font-weight:500}
+  .host{border-color:var(--line3);background:linear-gradient(180deg,var(--cardhi),var(--card))}
+  .fork{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.fork{grid-template-columns:1fr}}
+  .fork .node{box-shadow:0 14px 30px -26px #000}
+  .branchlbl{align-self:center;font-family:var(--mono);font-size:11px;color:var(--dim);margin:6px 0 2px;text-align:center}
+  .branchlbl b{color:var(--violet)}
+  .legend{margin-top:16px;font-size:12px;color:var(--warm);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 15px;line-height:1.7}
+  .legend b{color:var(--ink)}
+  .chip{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:1px 7px;border-radius:6px;background:rgba(107,211,200,.12);color:var(--cyan);border:1px solid var(--line3);vertical-align:middle}
+  .chip.free{background:rgba(155,140,224,.12);color:var(--violet);border-color:rgba(155,140,224,.4)}
+  .chip.paid{background:rgba(232,179,102,.12);color:var(--amber);border-color:rgba(232,179,102,.4)}
+  .foot{margin-top:26px;text-align:center;font-size:11px;color:var(--dim);line-height:1.7;border-top:1px solid var(--line);padding-top:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <p class="kick">Organograma de automação · §1.19</p>
+    <h1>@umpaisdemerda — pipeline de posts &amp; Reels</h1>
+    <p class="sub">De onde sai · por onde passa · o que entrega — e onde cada peça mora</p>
+    <p class="meta">Automação de Instagram (sátira política libertária PT-BR) · máquina copiada do Dr. Libertad · atualizado 2026-07-05</p>
+  </div>
+
+  <div class="status">
+    <b>⚠ Estado hoje (Fase 1 — não está no ar).</b> O <span class="on">miolo já foi adaptado</span>
+    (marca, voz PT-BR, 29 temas nos 4 pilares, contas <code>*_UPM</code> em <code>src/lib/accounts.ts</code>,
+    coletor de pauta próprio; e em 2026-07-05 <b>todo vínculo com o Dr. Libertad foi removido da automação</b> —
+    workflows agora usam <code>secrets.SITE_URL</code>, sem domínio fixo). Mas o pipeline <b>ainda NÃO está
+    deployado nem publicando</b> nesta conta: falta o deploy (Vercel), o banco (Neon) e o token da conta (Meta), e
+    <code>scripts/lote-dia.mjs</code> diz <i>"SEM publicar (Meta token FALTA)"</i>. Hoje ele roda
+    <b>local</b> para gerar <b>amostras</b> (<code>_amostra/</code>). O diagrama abaixo mostra o pipeline
+    <b>como foi desenhado</b> — cada peça marcada <span class="warn">⚠ Fase 2</span> ainda precisa ser
+    ligada/adaptada para @umpaisdemerda. Legenda de custo: <span class="chip free">grátis</span>
+    <span class="chip paid">pago (passa pelo controle-gastos)</span>.
+  </div>
+
+  <div class="howto">
+    <b>Como ler.</b> Cada caixa = um passo. Em cima o <b>fluxo</b> (o que acontece, em linguagem simples);
+    embaixo — <span class="chip">infra</span> — a <b>encanação</b>: <b>Host</b> (onde mora), <b>Rota/comando</b>
+    (URL/endpoint ou script), <b>Código</b> (o que executa) e <b>Conta/serviço</b> (nome — <b>nunca a chave</b>, §1.3).
+    A <b>seta</b> diz <b>o que trafega</b> para a peça seguinte.
+  </div>
+
+  <div class="flow">
+
+    <!-- 0 · CURADORIA DE PAUTA -->
+    <div class="node">
+      <div class="step">0 · Insumo — curadoria de pauta (manual, à parte)</div>
+      <h3>Ler o que o país aprontou na semana</h3>
+      <p class="desc">Fora do fluxo automático: um script puxa as manchetes da semana em 4 frentes (Executivo,
+        Legislativo, Judiciário, Crime/narco) só como <b>insumo humano</b>. Não publica nada; ajuda a calibrar
+        os temas. A régua apartidária vale: nada de nomes/partidos.</p>
+      <div class="infra">
+        <div class="lbl">Infra desta peça <span class="chip free">grátis</span></div>
+        <dl class="grid">
+          <dt>Host</dt><dd class="name">Máquina local do dono (rodado à mão)</dd>
+          <dt>Rota/comando</dt><dd>node scripts/coletor-pauta.mjs</dd>
+          <dt>Código</dt><dd class="name">scripts/coletor-pauta.mjs</dd>
+          <dt>Conta/serviço</dt><dd class="name">Google News RSS (público, sem chave)</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="arrow"><span>trafega: <b>ideias de tema</b> (curadoria) → alimenta a régua de THEMES</span></div>
+
+    <!-- 1 · GATILHO -->
+    <div class="node host">
+      <div class="step">1 · Gatilho — o relógio dispara sozinho</div>
+      <h3>O cron acorda o pipeline no horário</h3>
+      <p class="desc">Nos picos do Instagram (BRT), o agendador dispara um post. Plano previsto: ~2 carrosséis/dia
+        + 3 Reels de vídeo/dia + 1 Reel clássico. O <code>run</code> (0..5) vem da expressão cron, e define o
+        tom (manhã/tarde/noite) e a vaga do dia.</p>
+      <div class="infra">
+        <div class="lbl">Infra desta peça <span class="chip free">grátis</span></div>
+        <dl class="grid">
+          <dt>Host</dt><dd class="name">GitHub Actions (cron)</dd>
+          <dt>Rota/comando</dt><dd>.github/workflows/instagram-posts.yml · instagram-reels.yml · instagram-reels-classic.yml</dd>
+          <dt>Código</dt><dd class="name">workflows YAML → chamam a API do site via <code>secrets.SITE_URL</code> (domínio agnóstico; sem DR) <span class="warn">⚠ Fase 2: repo/secrets UPM a criar</span></dd>
+          <dt>Conta/serviço</dt><dd class="name">GitHub (repo desta automação) <span class="warn">⚠ Fase 2: repo/secrets UPM a criar</span></dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="arrow"><span>trafega: <b>run + horário</b> → GET /api/publish</span></div>
+
+    <!-- 2 · ESCOLHA DO TEMA -->
+    <div class="node host">
+      <div class="step">2 · A pauta do dia — escolha do tema</div>
+      <h3>Rotação dos 29 temas + trava anti-repetição</h3>
+      <p class="desc">O sistema escolhe 1 dos <b>29 temas</b> (4 pilares: servidão voluntária · a casta · o Estado
+        que rouba · liberdade), rodando sem repetir e pulando o que já saiu nos últimos <b>7 dias</b> em qualquer
+        formato (Reel ou carrossel).</p>
+      <div class="infra">
+        <div class="lbl">Infra desta peça <span class="chip free">grátis</span></div>
+        <dl class="grid">
+          <dt>Host</dt><dd class="name">App Next.js (server, edge/serverless)</dd>
+          <dt>Rota/comando</dt><dd>GET /api/publish (?run= &amp; ?preview=)</dd>
+          <dt>Código</dt><dd class="name">src/app/api/publish/route.ts (THEMES) + src/lib/rotation.ts + run-ledger.ts</dd>
+          <dt>Conta/serviço</dt><dd class="name">Neon Postgres (livro-razão anti-dup) <span class="warn">⚠ Fase 2: banco UPM a provisionar</span></dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="arrow"><span>trafega: <b>tema + slot (tom)</b></span></div>
+
+    <!-- 3 · CONTEXTO GRÁTIS -->
+    <div class="node">
+      <div class="step">3 · Pesquisa de apoio (grátis)</div>
+      <h3>Puxa contexto factual sem pagar</h3>
+      <p class="desc">Antes de escrever, busca um contexto leve sobre o tema. Primária: DuckDuckGo (web inteira);
+        reserva: Wikipedia. Tudo <b>fail-open</b>: se vier vazio, gera sem contexto.</p>
+      <div class="infra">
+        <div class="lbl">Infra desta peça <span class="chip free">grátis</span></div>
+        <dl class="grid">
+          <dt>Host</dt><dd class="name">App Next.js (server) → APIs públicas</dd>
+          <dt>Rota/comando</dt><dd>src/lib/ddg.ts + searchWikipedia (dentro de /api/publish)</dd>
+          <dt>Código</dt><dd class="name">searchTopic() em publish/route.ts</dd>
+          <dt>Conta/serviço</dt><dd class="name">DuckDuckGo + Wikipedia REST (sem chave, sem cartão)</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="arrow"><span>trafega: <b>tema + contexto</b> → prompt do Claude</span></div>
+
+    <!-- 4 · COPY VIA CLAUDE -->
+    <div class="node host">
+      <div class="step">4 · O texto — a voz da marca</div>
+      <h3>Claude escreve a copy no tom @umpaisdemerda</h3>
+      <p class="desc">O modelo gera um JSON: título-gancho, corpo, 3 insights (slides), CTA, legenda de IG e
+        <code>videoQueries</code> (termos de footage). O <b>marketBrief</b> PT-BR (voz crua, apartidária, o
+        "espelho" do servo voluntário) é injetado no prompt. Copy fica em cache por (tema, dia) → redisparo
+        não repaga.</p>
+      <div class="infra">
+        <div class="lbl">Infra desta peça <span class="chip paid">pago · controle-gastos</span></div>
+        <dl class="grid">
+          <dt>Host</dt><dd class="name">Anthropic API (nuvem)</dd>
+          <dt>Rota/comando</dt><dd>POST api.anthropic.com/v1/messages · modelo claude-haiku-4-5</dd>
+          <dt>Código</dt><dd class="name">generateContent() em publish/route.ts + accounts.ts (marketBrief) + spend.ts (teto)</dd>
+          <dt>Conta/serviço</dt><dd class="name">Anthropic · env ANTHROPIC_API_KEY — <b style="color:var(--cyan)">chave DEDICADA do produto</b> no cofre <code>.claude\chaves\umpaisdemerda.env</code> (§1.3; feito em task_76ae412d)</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="branchlbl">o tema vira <b>DUAS saídas visuais</b> — carrossel (imagem) ou Reel (vídeo)</div>
+
+    <div class="fork">
+      <!-- 5A · CARROSSEL -->
+      <div class="node">
+        <div class="step">5A · Carrossel (imagem)</div>
+        <h3>Slides estilo jornal satírico</h3>
+        <p class="desc">Monta capa + insights + CTA como imagens de "jornal" (só tipografia/carimbo, <b>sem
+          charge de IA</b> → custo de imagem = zero). Renderizadas on-the-fly por URL.</p>
+        <div class="infra">
+          <div class="lbl">Infra <span class="chip free">grátis</span></div>
+          <dl class="grid">
+            <dt>Host</dt><dd class="name">App Next.js (edge, next/og/satori)</dd>
+            <dt>Rota</dt><dd>GET /api/og?slide=cover|insight|cta</dd>
+            <dt>Código</dt><dd class="name">src/app/api/og/route.tsx <span class="warn">⚠ falta portar estilo jornal (Fase 2)</span></dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- 5B · REEL -->
+      <div class="node">
+        <div class="step">5B · Reel (vídeo)</div>
+        <h3>Footage real + música + render</h3>
+        <p class="desc">Busca footage de banco no tema, garante fundo (footage → ilustração → pular; nunca Reel
+          preto), escolhe música por tema e renderiza o mp4 vertical.</p>
+        <div class="infra">
+          <div class="lbl">Infra <span class="chip free">grátis</span> <span class="chip paid">fal só fallback</span></div>
+          <dl class="grid">
+            <dt>Host</dt><dd class="name">GitHub Actions (Chromium + ffmpeg via Remotion)</dd>
+            <dt>Comando</dt><dd>fetch-footage.mjs → reel-media.cjs → render-reel.mjs</dd>
+            <dt>Serviço</dt><dd class="name">Pexels (footage, env PEXELS_API_KEY — grátis, herdada do DR) · fal.ai (ilustração de fallback, env FAL_KEY — <b class="warn">placeholder no cofre; só criar chave dedicada se for usar IA</b>) · música local (pick-music.cjs / generate-music.mjs)</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow"><span>Reel: trafega <b>out/reel.mp4</b> → precisa de URL pública</span></div>
+
+    <!-- 6 · BLOB (só reel) -->
+    <div class="node">
+      <div class="step">6 · Hospedar o vídeo (só Reel)</div>
+      <h3>Sobe o mp4 e pega a URL pública</h3>
+      <p class="desc">A Graph API só publica Reel a partir de uma URL de vídeo acessível — o mp4 renderizado é
+        enviado para o armazenamento e devolve o link.</p>
+      <div class="infra">
+        <div class="lbl">Infra desta peça <span class="chip free">grátis (cota)</span></div>
+        <dl class="grid">
+          <dt>Host</dt><dd class="name">Vercel Blob (storage)</dd>
+          <dt>Rota/comando</dt><dd>node scripts/upload-blob.mjs → devolve URL</dd>
+          <dt>Código</dt><dd class="name">scripts/upload-blob.mjs</dd>
+          <dt>Conta/serviço</dt><dd class="name">Vercel · env BLOB_READ_WRITE_TOKEN <span class="warn">⚠ Fase 2: projeto Vercel UPM</span></dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="arrow"><span>trafega: <b>imagens (carrossel)</b> ou <b>URL do mp4 + legenda</b></span></div>
+
+    <!-- 7 · PUBLICAÇÃO -->
+    <div class="node host">
+      <div class="step">7 · Publicação — vai ao ar</div>
+      <h3>Posta no Instagram @umpaisdemerda</h3>
+      <p class="desc">Publica pela Graph API: carrossel (cria containers dos slides → publica) ou Reel (cria
+        container REELS → aguarda processar → publica). A legenda já traz CTA de seguir/salvar/compartilhar.</p>
+      <div class="infra">
+        <div class="lbl">Infra desta peça <span class="chip free">grátis (API Meta)</span></div>
+        <dl class="grid">
+          <dt>Host</dt><dd class="name">Instagram Graph API v25 (graph.instagram.com)</dd>
+          <dt>Rota/comando</dt><dd>/media + /media_publish (carrossel: /api/publish · Reel: /api/publish-reel)</dd>
+          <dt>Código</dt><dd class="name">publishCarousel() / publishReel() (route.ts) — leem a conta via accountFor('pt'); rotas auxiliares (instagram/migrate/insights) já corrigidas p/ `*_UPM` <span class="warn">⚠ comentários ainda dizem @drlibertad</span></dd>
+          <dt>Conta/serviço</dt><dd class="name">Instagram @umpaisdemerda · via app da Meta do DR · envs META_ACCESS_TOKEN_UPM + META_INSTAGRAM_ACCOUNT_ID_UPM (nomes no cofre) <span class="warn">⚠ Fase 2: valor do token da conta a gerar</span></dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="arrow"><span>trafega: <b>post_id + registro</b></span></div>
+
+    <!-- 8 · REGISTRO / MEDIÇÃO -->
+    <div class="node">
+      <div class="step">8 · Registro, medição e freio</div>
+      <h3>Grava o que saiu, mede e controla o gasto</h3>
+      <p class="desc">Cada publicação é gravada (posts + livro-razão da vaga do dia, base da trava anti-dup). Um
+        endpoint lê alcance/insights, e todo passo pago passa por um teto diário de gasto (bloqueia se estourar).</p>
+      <div class="infra">
+        <div class="lbl">Infra desta peça <span class="chip free">grátis</span></div>
+        <dl class="grid">
+          <dt>Host</dt><dd class="name">Neon Postgres + App Next.js</dd>
+          <dt>Rota/comando</dt><dd>savePost/recordRun · GET /api/insights · GET /api/spend (spend.ts)</dd>
+          <dt>Código</dt><dd class="name">run-ledger.ts · api/insights/route.ts · lib/spend.ts + api/spend/route.ts</dd>
+          <dt>Conta/serviço</dt><dd class="name">Neon (env @vercel/postgres) <span class="warn">⚠ Fase 2: banco UPM a provisionar</span></dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="arrow"><span>ciclo diário · <b>token renovado</b> mensalmente (refresh-token.yml → /api/refresh-token)</span></div>
+
+  </div>
+
+  <div class="legend">
+    <b>As duas camadas, sempre.</b> Em cima o <b>fluxo</b> (o dono entende sem ler código); embaixo a
+    <b>infra</b> (onde cada peça roda e por qual rota). <b>Grátis</b> em quase tudo: agendamento (GitHub Actions),
+    render (Remotion no CI), footage (Pexels), pesquisa (DuckDuckGo/Wikipedia) e a API da Meta. <b>Paga</b> só a
+    copy do Claude (centavos/post, com teto diário) e a fal apenas como <i>fallback</i> raro de fundo de Reel.
+    Se um dia trocar host, banco ou rota, é <b>este arquivo</b> que se atualiza (§1.19c). Segredo nunca entra
+    aqui — só o <b>nome</b> da conta/serviço (§1.3).
+  </div>
+
+  <div class="foot">
+    Canônico vivo desta automação · <code>ORGANOGRAMA.html</code> na raiz do projeto · formato = §1.19 /
+    <code>.claude\governanca\ORGANOGRAMA-TEMPLATE.html</code>.<br>
+    Nasce com a automação e acompanha a mudança (§1.19c). Linkado no painel de pendências do projeto.
+  </div>
+</div>
+</body>
+</html>

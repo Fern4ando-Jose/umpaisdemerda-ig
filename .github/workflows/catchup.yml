@@ -1,0 +1,61 @@
+name: Catch-up — redispara posts que o cron do GitHub atrasou/derrubou
+
+# REDE DE SEGURANÇA do agendamento. O scheduler do GitHub atrasa horas ou derruba
+# crons → posts somem. Este workflow roda de hora em hora, pergunta ao
+# /api/runs-status quais runs do dia (0..5, por idioma) já venceram e ainda NÃO
+# publicaram, e redispara SÓ esses. É idempotente: carrossel tem trava por
+# (tópico,conta,7d) e reel tem dedup por (dia,run,conta) no livro-razão
+# `published_runs` — então um cron real atrasado que chegue depois é deduplicado
+# (não duplica o post). Ver src/lib/run-ledger.ts e /api/runs-status.
+
+on:
+  schedule:
+    - cron: "30 * * * *" # de hora em hora (no minuto :30)
+  workflow_dispatch: {}
+
+# Necessário p/ o GITHUB_TOKEN poder disparar OUTROS workflows (workflow_dispatch
+# é exceção à regra anti-recursão do GitHub → o run disparado executa de verdade).
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: catchup
+  cancel-in-progress: false
+
+jobs:
+  catchup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detectar runs faltantes e redisparar
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          RESP=$(curl -fsS --max-time 30 -H "Authorization: Bearer $CRON_SECRET" \
+            "${{ secrets.SITE_URL }}/api/runs-status")
+          echo "runs-status: $RESP"
+
+          echo "$RESP" | jq -c '.missing[]?' | while read -r item; do
+            lang=$(echo "$item" | jq -r '.lang')
+            run=$(echo "$item" | jq -r '.run')
+
+            case "$run" in
+              0|1|2) base="instagram-reels";          extra="-f publish=yes" ;;
+              3)     base="instagram-reels-classic";  extra="-f publish=yes" ;;
+              4|5)   base="instagram-posts";          extra="" ;;
+              *)     echo "run $run desconhecido — pulando"; continue ;;
+            esac
+            if [ "$lang" = "pt" ]; then wf="${base}-pt.yml"; else wf="${base}.yml"; fi
+
+            echo "::notice title=Catch-up::redisparando $wf run=$run ($lang)"
+            # shellcheck disable=SC2086
+            gh workflow run "$wf" -f run="$run" $extra \
+              || echo "::warning::falha ao disparar $wf run=$run ($lang)"
+          done
+
+          echo "Catch-up concluído."

@@ -1,0 +1,27 @@
+name: Instagram — renovar token
+
+# Renova o token de longa duração da Meta antes dos 60 dias expirarem.
+# Roda no dia 1 de cada mês às 10:00 UTC. Também pode ser disparado manualmente.
+on:
+  schedule:
+    - cron: "0 10 1 * *"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Chamar endpoint de refresh-token
+        run: |
+          HTTP_CODE=$(curl -sS -o response.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.SITE_URL }}/api/refresh-token")
+          echo "HTTP $HTTP_CODE"
+          echo "--- resposta ---"
+          cat response.json
+          echo ""
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::Falha ao renovar token (HTTP $HTTP_CODE)"
+            exit 1
+          fi

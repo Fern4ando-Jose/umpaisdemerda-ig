@@ -1,0 +1,213 @@
+name: Instagram Reels — Um País de Merda
+
+# Pipeline GRÁTIS de Reels (vídeo) para o @umpaisdemerda.
+# Fundo = footage real de banco (Pexels) + grade da marca + música. Renderiza com
+# Remotion no GitHub Actions (Chromium + ffmpeg), sobe o mp4 pro Vercel Blob e
+# publica via /api/publish-reel.
+#
+# 3 Reels de VÍDEO/dia em horários INTERCALADOS nos picos do IG (BRT), cada um com
+# um tópico DISTINTO (runs 0..2). O Reel CLÁSSICO (slide animado) roda à parte em
+# instagram-reels-classic.yml (run 3, 19h BRT). O `run` é derivado da EXPRESSÃO cron
+# (github.event.schedule), não da hora do relógio — pra atraso do cron não colidir
+# com o run vizinho. Slot/tom = SLOT_FOR_RUN[run].
+on:
+  schedule:
+    - cron: "17 15 * * *" # 12:17 BRT (run 0)
+    - cron: "17 20 * * *" # 17:17 BRT (run 1)
+    - cron: "17 0 * * *"  # 21:17 BRT (run 2)
+  workflow_dispatch:
+    inputs:
+      run:
+        description: "Run 0..2 p/ escolher o tópico (vazio = run 2)"
+        required: false
+        default: ""
+      publish:
+        description: "Publicar no Instagram? (no = só renderiza p/ preview)"
+        required: false
+        default: "no"
+        type: choice
+        options: ["no", "yes"]
+
+# Um Reel por horário roda isolado; horários diferentes não se cancelam.
+concurrency:
+  group: instagram-reels-${{ github.event.schedule || github.event.inputs.run || 'manual' }}
+  cancel-in-progress: false
+
+jobs:
+  reel:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Baixa o código do repositório
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      # 2. Configura Node 20 com cache de npm
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      # 3. Instala dependências (inclui Remotion). O Remotion baixa o Chromium
+      #    Headless Shell automaticamente no primeiro render.
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+
+      # 4. Determina o `run` (0..3): da expressão cron (agendado) ou do input (manual).
+      - name: Determinar run pelo horário
+        id: params
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          IN_RUN: ${{ github.event.inputs.run }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            RUN="${IN_RUN:-2}"   # disparo manual: run informado ou 2 (noite)
+          else
+            case "$SCHEDULE" in
+              "17 15 * * *") RUN=0 ;;
+              "17 20 * * *") RUN=1 ;;
+              "17 0 * * *")  RUN=2 ;;
+              *) RUN=2 ;;  # fallback defensivo
+            esac
+          fi
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "Run escolhido: $RUN"
+
+      # 5. Busca o conteúdo em /api/publish?preview=1&run=N (gera título/slides/cta +
+      #    videoQueries via Claude, SEM publicar) e monta o REEL_PROPS.
+      - name: Obter conteúdo (preview) e montar REEL_PROPS
+        id: content
+        run: |
+          curl -fsS --max-time 180 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.SITE_URL }}/api/publish?preview=1&run=${{ steps.params.outputs.run }}" \
+            -o preview.json
+          echo "Prévia recebida:"
+          cat preview.json | head -c 400; echo
+
+          node -e '
+            const fs = require("fs");
+            const p = JSON.parse(fs.readFileSync("preview.json", "utf8"));
+            const props = {
+              title: p.title || "Um País de Merda",
+              slides: Array.isArray(p.slides) ? p.slides : [],
+              accentWords: Array.isArray(p.accentWords) ? p.accentWords : [],
+              cta: p.cta || "",
+              kw: p.kw || "LIBERTAD",
+              ed: p.ed || "000",
+              // topic: chave do tema (p/ o writeback do footage compartilhar ES↔PT).
+              topic: p.topic || "",
+              img: p.illustration || undefined,
+              cat: p.cat || "freedom",
+              handle: p.handle || "@umpaisdemerda",
+              brand: p.brand || "Um País de Merda",
+              // Termos de busca de footage gerados pelo Claude (no tema do post).
+              videoQueries: Array.isArray(p.videoQueries) ? p.videoQueries : [],
+              // Footage COMPARTILHADO entre ES e PT (mesmo vídeo), resolvido e
+              // cacheado pela API por (tópico, dia). Vazio → fetch-footage.mjs busca.
+              clips: Array.isArray(p.clips) && p.clips.length ? p.clips : undefined,
+              // Trilha embutida (camada de criação, opcional). UMA FAIXA POR TEMA:
+              // o picker acha no manifest.json a faixa do `topic` do post; sem ela,
+              // cai na rotação antiga por `run` (bed-0.mp3, …); sem nenhuma → mudo.
+              music: require("./scripts/pick-music.cjs").pickMusic({ topic: p.topic, run: ${{ steps.params.outputs.run }} }) || undefined
+            };
+            fs.writeFileSync("caption.txt", p.caption || p.title || "");
+            fs.writeFileSync("slot.txt", p.slot || "noite");
+            fs.writeFileSync("topic.txt", p.topic || ""); // → publish-reel (anti-dup cross-formato)
+            fs.writeFileSync("reel-props.json", JSON.stringify(props));
+            console.log("REEL_PROPS montado (run", "'"${{ steps.params.outputs.run }}"'", "):", JSON.stringify(props).slice(0, 280));
+          '
+
+      # 5b. Busca footage REAL de banco (Pexels, grátis) no tema do post → clipes de
+      #     fundo (movimento real, 5 cenas). NÃO-FATAL: sem PEXELS_API_KEY ou sem
+      #     match, segue sem clips e o Reel usa a ilustração estática.
+      - name: Buscar footage (Pexels) → clipes de fundo
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          FOOTAGE_NUM_CLIPS: "5"
+          # writeback: se a Pexels for usada aqui (fallback), compartilha o footage
+          # achado com a outra conta via /api/reel-share (mesmo vídeo ES↔PT).
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: node scripts/fetch-footage.mjs --props=reel-props.json
+
+      # 5c. Guarda anti-preto (#3) — cascata footage → ilustração → pular.
+      #     Se a Pexels também não trouxe clipes e não há ilustração, tenta gerar a
+      #     ilustração da fal (illus=1, raro, ~US$0,03–0,08) como fundo. Se ainda
+      #     assim faltar mídia, NÃO publica: Reel preto/quebrado nunca vai ao ar
+      #     (caso Nº 102). Regra única em scripts/reel-media.cjs (teste invariante).
+      - name: Garantir fundo (footage → ilustração → pular)
+        id: media
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          has() { node -e 'process.exit(require("./scripts/reel-media.cjs").hasVisualMedia(require("./reel-props.json"))?0:1)'; }
+          if has; then
+            echo "Fundo OK (footage ou ilustração presente)."
+            echo "has_media=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Sem footage e sem ilustração — tentando ilustração (fal) como fallback…"
+          curl -fsS --max-time 200 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "${{ secrets.SITE_URL }}/api/publish?preview=1&illus=1&run=${{ steps.params.outputs.run }}" \
+            -o illus.json || echo "(chamada de ilustração falhou)"
+          node -e '
+            const fs = require("fs");
+            const p = JSON.parse(fs.readFileSync("reel-props.json", "utf8"));
+            let ill = null;
+            try { ill = JSON.parse(fs.readFileSync("illus.json", "utf8")).illustration || null; } catch {}
+            if (ill) { p.img = ill; fs.writeFileSync("reel-props.json", JSON.stringify(p)); console.log("ilustração de fallback aplicada"); }
+            else { console.log("sem ilustração de fallback"); }
+          '
+          if has; then
+            echo "has_media=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_media=0" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Reel pulado::Sem footage nem ilustração — não publicamos Reel preto (#3)."
+          fi
+
+      # 6. Renderiza o Reel para out/reel.mp4 (só se há fundo de verdade).
+      - name: Renderizar Reel (Remotion)
+        if: ${{ steps.media.outputs.has_media == '1' }}
+        run: node scripts/render-reel.mjs --props=reel-props.json
+
+      # 7. Sobe o mp4 para o Vercel Blob e captura a URL pública (stdout)
+      - name: Upload do mp4 para o Vercel Blob
+        id: upload
+        if: ${{ steps.media.outputs.has_media == '1' }}
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: |
+          URL=$(node scripts/upload-blob.mjs)
+          echo "URL do vídeo: $URL"
+          echo "video_url=$URL" >> "$GITHUB_OUTPUT"
+
+      # 7b. Modo preview: no disparo manual com publish=no, NÃO publica — só expõe a
+      #     URL do mp4 p/ revisar a criação. O cron (schedule) sempre publica.
+      - name: Preview (sem publicar)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'yes' && steps.media.outputs.has_media == '1' }}
+        run: |
+          echo "::notice title=Reel pronto (preview, não publicado)::${{ steps.upload.outputs.video_url }}"
+          echo "Preview do Reel (NÃO publicado): ${{ steps.upload.outputs.video_url }}"
+
+      # 8. Publica o Reel no Instagram via /api/publish-reel (polling de status).
+      #     Roda no cron (schedule) ou no disparo manual com publish=yes — e só se
+      #     houver fundo (has_media): Reel sem footage/ilustração é pulado, não preto.
+      - name: Publicar Reel no Instagram
+        if: ${{ (github.event_name == 'schedule' || github.event.inputs.publish == 'yes') && steps.media.outputs.has_media == '1' }}
+        run: |
+          RESP=$(curl -sS --max-time 280 -G \
+            -w $'\nHTTP_CODE:%{http_code}' \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --data-urlencode "video=${{ steps.upload.outputs.video_url }}" \
+            --data-urlencode "caption@caption.txt" \
+            --data-urlencode "slot=$(cat slot.txt)" \
+            --data-urlencode "run=${{ steps.params.outputs.run }}" \
+            --data-urlencode "topic@topic.txt" \
+            "${{ secrets.SITE_URL }}/api/publish-reel")
+          echo "Resposta do servidor:"
+          echo "$RESP"
+          echo "$RESP" | grep -q '"ok":true' || { echo "::error::Publicação falhou"; exit 1; }
+          echo "Reel publicado."

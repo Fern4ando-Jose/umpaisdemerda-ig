@@ -1,0 +1,65 @@
+# Dependências
+node_modules/
+
+# Build do Next.js
+.next/
+out/
+*.tsbuildinfo
+
+# Artefatos do pipeline de Reels (render + dados temporários do CI)
+/reel-props.json
+/caption.txt
+/preview.json
+
+# Segredos: NENHUM .env sobe ao git (§1.7). Cobre .env, .env.local, .env.production…
+.env
+.env*
+!.env.example
+.DS_Store
+*.log
+
+# Ferramentas locais do editor / Claude Code
+.claude/
+.agents/
+skills-lock.json
+
+# Notas e rascunhos locais (não versionados)
+_notas/
+public_tmp/
+*.docx
+*.bck
+
+# Projetos (curtas de clássicos): trabalho em progresso / rascunhos — só produção final vai pro git
+projetos/
+
+# Pendências: fonte única é o painel central D:\Claude\.pendencias\ (controle interno, fora do git)
+PENDENCIAS.md
+
+# Imagens soltas na raiz (screenshots, exports temporários)
+/*.jpg
+/*.jpeg
+/*.png
+
+# Automação: snapshots de referência (duplicam código de src/) e preview local
+DR-instagram-automation/files/
+DR-instagram-automation/preview-carousel.html
+.vercel
+
+# Linha editorial = estratégia de marca: mora OFFLINE em D:\Claude\.marca\dr-libertad\ (repo é PÚBLICO)
+LINHA-EDITORIAL.md
+
+# ── Governança/controle do workspace — NUNCA vai pro git (§1.7) ──
+CLAUDE.md
+DECISOES-TRAVADAS.md
+PENDENCIAS.inbox.md
+ROADMAP-SITE.md
+
+# Referência do Dr. Libertad (é doc do OUTRO produto; esta automação não precisa dela p/ rodar)
+DR-instagram-automation/
+
+# Material de apoio, notas e amostras de teste (não-produção)
+Material/
+Testes/
+
+# Lixo de metadado do macOS (AppleDouble) — ex.: ._slot-monitor.mjs
+._*

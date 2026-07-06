@@ -1,0 +1,97 @@
+name: Instagram — publicar posts
+
+# Agendamento gratuito via GitHub Actions (substitui os crons do Vercel).
+# 2 CARROSSÉIS/dia (runs 4 e 5 — tópicos distintos dos Reels, que usam 0..3).
+# Reduzido de 6 → 2: os dados do /insights mostram que Reel supera carrossel em
+# alcance; o foco diário passou a ser vídeo. run é derivado da EXPRESSÃO cron que
+# disparou (github.event.schedule), NÃO da hora do relógio. slot/tom = run % 3.
+on:
+  schedule:
+    - cron: "17 12 * * *" # 09:17 BRT (run 4)
+    - cron: "17 17 * * *" # 14:17 BRT (run 5)
+  workflow_dispatch:
+    inputs:
+      run:
+        description: "Run específico 0..5 p/ backfill de um horário. Vazio = usa slot/topic."
+        required: false
+        default: ""
+      slot:
+        description: "Slot a publicar (manha | tarde | noite). Vazio = publica os 3."
+        required: false
+        default: ""
+      topic:
+        description: "Forçar um tópico específico (override). Vazio = tópico do dia. Use com 1 slot p/ não publicar 3x."
+        required: false
+        default: ""
+      force:
+        description: "Ignorar a trava anti-duplicata de 24h (republicar/backfill)."
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: instagram-posts
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Determinar parâmetros pelo horário
+        id: params
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          IN_RUN: ${{ github.event.inputs.run }}
+          IN_SLOT: ${{ github.event.inputs.slot }}
+          IN_TOPIC: ${{ github.event.inputs.topic }}
+          IN_FORCE: ${{ github.event.inputs.force }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            # Disparo manual: run/slot/topic/force conforme informado.
+            # (run vazio + slot vazio = 3 slots base; run preenchido = backfill de 1 horário.)
+            echo "run=$IN_RUN" >> "$GITHUB_OUTPUT"
+            echo "slot=$IN_SLOT" >> "$GITHUB_OUTPUT"
+            echo "topic=$IN_TOPIC" >> "$GITHUB_OUTPUT"
+            echo "force=$IN_FORCE" >> "$GITHUB_OUTPUT"
+          else
+            # Agendado: run derivado da EXPRESSÃO cron que disparou (github.event.schedule),
+            # não da hora real — assim o atraso/adianto do cron não colide com o run vizinho.
+            case "$SCHEDULE" in
+              "17 12 * * *") RUN=4 ;;
+              "17 17 * * *") RUN=5 ;;
+              *) RUN=4 ;;  # fallback defensivo
+            esac
+            echo "run=$RUN" >> "$GITHUB_OUTPUT"
+            echo "slot=" >> "$GITHUB_OUTPUT"
+            echo "topic=" >> "$GITHUB_OUTPUT"
+            echo "force=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Chamar endpoint de publicação
+        env:
+          AUTH: ${{ secrets.CRON_SECRET }}
+          SITE: ${{ secrets.SITE_URL }}
+          RUN: ${{ steps.params.outputs.run }}
+          SLOT: ${{ steps.params.outputs.slot }}
+          TOPIC: ${{ steps.params.outputs.topic }}
+          FORCE: ${{ steps.params.outputs.force }}
+        run: |
+          # Monta a query com -G --data-urlencode (lida com espaços no tópico).
+          ARGS=(-sS -o response.json -w "%{http_code}" -G)
+          ARGS+=(-H "Authorization: Bearer $AUTH")
+          [ -n "$RUN" ]   && ARGS+=(--data-urlencode "run=$RUN")
+          [ -n "$SLOT" ]  && ARGS+=(--data-urlencode "slot=$SLOT")
+          [ -n "$TOPIC" ] && ARGS+=(--data-urlencode "topic=$TOPIC")
+          [ "$FORCE" = "true" ] && ARGS+=(--data-urlencode "force=1")
+          echo "Publicando: run='${RUN}' slot='${SLOT}' topic='${TOPIC}' force='${FORCE}'"
+          HTTP_CODE=$(curl "${ARGS[@]}" "$SITE/api/publish")
+          echo "HTTP $HTTP_CODE"
+          echo "--- resposta ---"
+          cat response.json
+          echo ""
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::Falha na publicação (HTTP $HTTP_CODE)"
+            exit 1
+          fi

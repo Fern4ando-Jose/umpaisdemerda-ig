@@ -1,0 +1,133 @@
+name: Instagram Reel CLÁSSICO — Um País de Merda
+
+# Reel no estilo ANTIGO (slide animado sobre a ilustração da fal) — mantido como
+# estava, rodando em paralelo ao motor de vídeo (footage). Foi o formato que gerou
+# o melhor Reel até agora (insights), por isso preservado.
+#
+# 1x/dia às 22:00 UTC (19:00 BRT — slot do Reel campeão). Tópico = run 3 (distinto
+# dos Reels de vídeo, que usam runs 0..2). Usa a composição Remotion "ReelClassic"
+# e o preview com ?illus=1 (gera a ilustração de fundo).
+
+on:
+  schedule:
+    - cron: "17 22 * * *" # 19:17 BRT (run 3)
+  workflow_dispatch:
+    inputs:
+      run:
+        description: "Run p/ escolher o tópico (vazio = run 3)"
+        required: false
+        default: ""
+      publish:
+        description: "Publicar no Instagram? (no = só renderiza p/ preview)"
+        required: false
+        default: "no"
+        type: choice
+        options: ["no", "yes"]
+
+concurrency:
+  group: instagram-reels-classic-${{ github.event.schedule || github.event.inputs.run || 'manual' }}
+  cancel-in-progress: false
+
+jobs:
+  reel-classic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+
+      # run: 3 no agendamento; input ou 3 no disparo manual.
+      - name: Determinar run
+        id: params
+        env:
+          EVENT: ${{ github.event_name }}
+          IN_RUN: ${{ github.event.inputs.run }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            RUN="${IN_RUN:-3}"
+          else
+            RUN=3
+          fi
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "Run escolhido: $RUN"
+
+      # Conteúdo + ILUSTRAÇÃO (illus=1) — o clássico usa a imagem da fal de fundo.
+      - name: Obter conteúdo (preview, com ilustração) e montar REEL_PROPS
+        run: |
+          curl -fsS --max-time 180 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.SITE_URL }}/api/publish?preview=1&illus=1&run=${{ steps.params.outputs.run }}" \
+            -o preview.json
+          echo "Prévia recebida:"
+          cat preview.json | head -c 400; echo
+
+          node -e '
+            const fs = require("fs");
+            const p = JSON.parse(fs.readFileSync("preview.json", "utf8"));
+            const props = {
+              title: p.title || "Um País de Merda",
+              slides: Array.isArray(p.slides) ? p.slides : [],
+              accentWords: Array.isArray(p.accentWords) ? p.accentWords : [],
+              cta: p.cta || "",
+              kw: p.kw || "LIBERTAD",
+              ed: p.ed || "000",
+              img: p.illustration || undefined,
+              cat: p.cat || "freedom",
+              handle: p.handle || "@umpaisdemerda",
+              brand: p.brand || "Um País de Merda",
+              // Trilha embutida — UMA FAIXA POR TEMA: o picker acha no manifest.json
+              // a faixa do `topic`; sem ela, cai na rotação legado por `run`; sem
+              // nenhuma → Reel renderiza mudo.
+              music: require("./scripts/pick-music.cjs").pickMusic({ topic: p.topic, run: ${{ steps.params.outputs.run }} }) || undefined
+            };
+            fs.writeFileSync("caption.txt", p.caption || p.title || "");
+            fs.writeFileSync("slot.txt", p.slot || "noite");
+            fs.writeFileSync("topic.txt", p.topic || ""); // → publish-reel (anti-dup cross-formato)
+            fs.writeFileSync("reel-props.json", JSON.stringify(props));
+            console.log("REEL_PROPS (classic) montado:", JSON.stringify(props).slice(0, 280));
+          '
+
+      # Renderiza a composição CLÁSSICA (slide animado), não a de footage.
+      - name: Renderizar Reel clássico (Remotion)
+        run: node scripts/render-reel.mjs --props=reel-props.json --composition=ReelClassic
+
+      - name: Upload do mp4 para o Vercel Blob
+        id: upload
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: |
+          URL=$(node scripts/upload-blob.mjs)
+          echo "URL do vídeo: $URL"
+          echo "video_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Preview (sem publicar)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'yes' }}
+        run: |
+          echo "::notice title=Reel clássico pronto (preview)::${{ steps.upload.outputs.video_url }}"
+          echo "Preview (NÃO publicado): ${{ steps.upload.outputs.video_url }}"
+
+      - name: Publicar Reel no Instagram
+        if: ${{ github.event_name == 'schedule' || github.event.inputs.publish == 'yes' }}
+        run: |
+          RESP=$(curl -sS --max-time 280 -G \
+            -w $'\nHTTP_CODE:%{http_code}' \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --data-urlencode "video=${{ steps.upload.outputs.video_url }}" \
+            --data-urlencode "caption@caption.txt" \
+            --data-urlencode "slot=$(cat slot.txt)" \
+            --data-urlencode "run=${{ steps.params.outputs.run }}" \
+            --data-urlencode "topic@topic.txt" \
+            "${{ secrets.SITE_URL }}/api/publish-reel")
+          echo "Resposta do servidor:"
+          echo "$RESP"
+          echo "$RESP" | grep -q '"ok":true' || { echo "::error::Publicação falhou"; exit 1; }
+          echo "Reel clássico publicado."
