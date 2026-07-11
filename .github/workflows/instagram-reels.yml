@@ -49,6 +49,11 @@ jobs:
           cache: "npm"
           cache-dependency-path: package-lock.json
 
+      # 2b. ffmpeg/ffprobe — o Remotion traz o próprio p/ renderizar, mas o
+      #     verify-render.mjs (checagem pós-render 9:16) usa o `ffprobe` do sistema.
+      - name: Instalar ffmpeg (p/ ffprobe da verificação pós-render)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
       # 3. Instala dependências (inclui Remotion). O Remotion baixa o Chromium
       #    Headless Shell automaticamente no primeiro render.
       - name: Instalar dependências

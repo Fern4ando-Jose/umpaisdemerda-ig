@@ -43,7 +43,20 @@ export function verifyRender(file, opts = {}) {
   if (!existsSync(file)) throw new Error(`verify-render: arquivo não existe: ${file}`);
   if (statSync(file).size === 0) throw new Error(`verify-render: arquivo vazio (0 bytes): ${file}`);
 
-  const data = probe(file);
+  let data;
+  try {
+    data = probe(file);
+  } catch (e) {
+    // ffprobe ausente no ambiente (ex.: runner do CI sem ffmpeg) NÃO deve derrubar
+    // um render válido — a verificação é uma checagem de segurança, não crítica.
+    // Só PULA quando o binário não existe (ENOENT); erros de ffprobe rodando (mídia
+    // corrompida) continuam propagando.
+    if (e && (e.code === "ENOENT" || /ENOENT|not found|não encontrad/i.test(String(e.message)))) {
+      console.warn(`verify-render: ffprobe indisponível — verificação PULADA (${file}). Instale ffmpeg p/ ativar.`);
+      return { ok: true, skipped: true, reason: "ffprobe indisponível" };
+    }
+    throw e;
+  }
   const streams = data.streams || [];
   const video = streams.find((s) => s.codec_type === "video");
   const audio = streams.find((s) => s.codec_type === "audio");
