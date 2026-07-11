@@ -96,13 +96,15 @@
       <h3>Ler o que o país aprontou na semana</h3>
       <p class="desc">Fora do fluxo automático: um script puxa as manchetes da semana em 4 frentes (Executivo,
         Legislativo, Judiciário, Crime/narco) só como <b>insumo humano</b>. Não publica nada; ajuda a calibrar
-        os temas. A régua apartidária vale: nada de nomes/partidos.</p>
+        os temas. A régua apartidária vale: nada de nomes/partidos. <b>Dedup versionado</b>: cada manchete vira
+        hash em <code>data/pauta-seen.json</code> → a curadoria só vê o inédito (🆕). Agora <b>agendado</b>
+        (segunda 12:00 UTC) via <code>coletor-pauta.yml</code>, que commita o dedup de volta.</p>
       <div class="infra">
         <div class="lbl">Infra desta peça <span class="chip free">grátis</span></div>
         <dl class="grid">
-          <dt>Host</dt><dd class="name">Máquina local do dono (rodado à mão)</dd>
-          <dt>Rota/comando</dt><dd>node scripts/coletor-pauta.mjs</dd>
-          <dt>Código</dt><dd class="name">scripts/coletor-pauta.mjs</dd>
+          <dt>Host</dt><dd class="name">GitHub Actions (cron semanal) + local à mão <span class="warn">⚠ Fase 2: roda de fato após push do repo UPM</span></dd>
+          <dt>Rota/comando</dt><dd>.github/workflows/coletor-pauta.yml → node scripts/coletor-pauta.mjs</dd>
+          <dt>Código</dt><dd class="name">scripts/coletor-pauta.mjs · data/pauta-seen.json (dedup)</dd>
           <dt>Conta/serviço</dt><dd class="name">Google News RSS (público, sem chave)</dd>
         </dl>
       </div>
