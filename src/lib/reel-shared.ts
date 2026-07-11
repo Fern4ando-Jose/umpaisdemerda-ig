@@ -141,13 +141,17 @@ export async function writeReelSharedClips(input: ShareClipsInput): Promise<void
 const PER_PAGE = 20;
 
 // Fallback por categoria — só usado se não houver videoQueries no tema.
+// Arquétipos POLÍTICOS por pilar (@umpaisdemerda), não literais: símbolo concreto,
+// close/rosto/movimento. Mapa cat→pilar: self=O SERVO · network=A CASTA ·
+// anxiety=O ESTADO que rouba · freedom=LIBERDADE · dopamine=PÃO E CIRCO · mind=O DESPERTAR.
+// (Antes eram os termos anti-dopamina herdados do Dr. Libertad — celular/scroll — errados p/ política.)
 const CAT_TERMS: Record<string, string[]> = {
-  freedom: ["person arms open nature", "walking free open road", "person breathing calm outdoors", "putting phone away relief"],
-  dopamine: ["person scrolling phone in bed", "hand swiping smartphone screen", "phone notifications close up", "person addicted to phone night"],
-  anxiety: ["anxious person looking at phone", "stressed person screen night", "overwhelmed person dark room", "rain window sad mood"],
-  network: ["people on phones ignoring each other", "lonely person in crowd", "couple distracted by phones", "person alone looking at screen"],
-  self: ["person reflection window thinking", "alone silhouette window light", "thoughtful person low light", "person looking in mirror"],
-  mind: ["calm person meditating", "person thinking by window", "slow breathing calm light", "quiet moment without phone"],
+  self:    ["sheep herd flock field", "crowd walking rush hour", "people commuting subway train", "time clock punch card", "tired worker head down desk", "hamster wheel spinning"],
+  network: ["champagne poured luxury party", "private jet interior stairs", "luxury mansion pool", "business handshake suits", "expensive watch on wrist close up", "gold bars stacked"],
+  anxiety: ["close up hands counting cash", "empty wallet open hands", "government building columns", "money burning fire", "coins falling drain", "vault safe heavy door"],
+  freedom: ["breaking chains hands close up", "open road horizon driving", "bird flying sky sunset", "wild horses running free", "key unlocking lock close up", "sunrise field wind"],
+  dopamine:["circus tent lights crowd", "crowd cheering stadium", "fireworks night crowd", "confetti falling celebration", "carnival lights people"],
+  mind:    ["man slowly looking up into light", "crowd marching determined", "sunrise over city skyline", "person waking looking out window", "serious face close up thinking"],
 };
 
 function rotate<T>(arr: T[], n: number): T[] {

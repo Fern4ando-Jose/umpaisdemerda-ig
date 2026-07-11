@@ -259,13 +259,18 @@ Gere um JSON válido (sem markdown, sem crases) com esta estrutura EXATA:
   "instagramCaption": "legenda IG máx 2200 chars: gancho forte na 1ª linha + desenvolvimento + fechamento com CTA de SEGUIR ${acc.handle} (com motivo provocador de marca) + salvar (🔖) + compartilhar (📩) + 4-5 hashtags, em ${L}",
   "tags": ["tag1", "tag2", "tag3", "tag4"],
   "videoQueries": [
-    "termo de busca EM INGLÊS para vídeo de banco que represente VISUALMENTE a cena/emoção deste post — concreto e filmável (pessoas, gestos, objetos, lugares), NÃO metáfora abstrata. Ex: 'tired worker counting coins at table'",
-    "segundo termo distinto EM INGLÊS, mesmo critério. Ex: 'long queue of people waiting outside'",
-    "terceiro termo distinto EM INGLÊS, mesmo critério. Ex: 'hands holding empty wallet'"
+    "CENA 1 (gancho): o SUJEITO DO PROBLEMA em tensão — quem sofre ou o alvo da denúncia, com emoção no rosto/mãos. Termo EM INGLÊS. Ex: 'close up hands emptying worn wallet'",
+    "CENA 2 (revelação): o CONTRASTE que o dado expõe — em geral QUEM GANHA (a casta, o luxo, o poder confortável). O corte da cena 1 p/ a 2 é o choque. Ex: 'champagne poured at luxury party'",
+    "CENA 3 (provocação): a VIRADA — despertar, olhar que se levanta, corrente arrebentando, porta que abre, multidão. Ex: 'man slowly looking up into the light'"
   ]
 }
 
-Para "videoQueries": 3 frases EM INGLÊS, 3-6 palavras, cenas REAIS e filmáveis (não ilustrações nem metáforas). Devem existir num banco como Pexels e conectar com o tema do post.`;
+Para "videoQueries" (o FUNDO de cada cena do Reel — 3 termos EM INGLÊS, 1 por cena NA ORDEM):
+- Sátira política NÃO tem footage literal: pense em SÍMBOLO/ARQUÉTIPO, não em ilustração do tema. Busque o SUBSTANTIVO CONCRETO que simboliza (nunca conceito abstrato como "freedom"/"corruption"/"government" — isso volta lixo corporativo).
+- A alavanca mais forte é o CONTRASTE IRÔNICO: mostrar QUEM GANHA, não quem perde (texto amargo sobre imposto → footage de jantar de luxo/jato). O gap imagem↔texto é a piada.
+- UM sujeito claro, legível em <1s, enquadramento FECHADO (escreva "close up ..." quando puder), com ROSTO humano com emoção OU movimento — nunca plano geral genérico.
+- Cada termo casa com a MENSAGEM DAQUELE beat (não com o tema geral). Arco: vítima → quem se beneficia → virada.
+- Atemporal e neutro: sem pessoas reconhecíveis, sem texto na tela, sem marcos que gritem "EUA" (Capitólio/bandeira). 2-4 palavras, deve existir no Pexels.`;
 
   // O haiku ocasionalmente devolve JSON malformado → o post falhava silencioso.
   // Tentamos 2×: extrai o objeto (parseContentJson) e, se o parse falhar, regenera.

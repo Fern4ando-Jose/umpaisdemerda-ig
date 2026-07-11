@@ -23,13 +23,16 @@ const PROPS_PATH = resolve(process.cwd(), propsArg ? propsArg.slice("--props=".l
 // Cenas POLÍTICAS/ECONÔMICAS filmáveis (pilar da conta), não literais. Mapa de
 // cats: freedom=LIBERDADE · self=O SERVO · network=A CASTA · anxiety=O ESTADO ·
 // dopamine=PÃO E CIRCO · mind=O DESPERTAR. Em inglês (Pexels indexa melhor assim).
+// Arquétipos POLÍTICOS por pilar (símbolo concreto, close/rosto/movimento) —
+// alinhado com src/lib/reel-shared.ts. self=SERVO·network=CASTA·anxiety=ESTADO·
+// freedom=LIBERDADE·dopamine=PÃO E CIRCO·mind=DESPERTAR.
 const CAT_TERMS = {
-  freedom: ["person walking away open road", "breaking free chains hands", "open gate field sunrise", "person standing tall confident"],
-  dopamine: ["circus tent lights crowd", "crowd cheering stadium", "fireworks night crowd", "carnival lights people"],
-  anxiety: ["worker counting coins table", "long queue people waiting line", "hand holding empty wallet", "stack of bills paperwork desk"],
-  network: ["business men suits handshake", "luxury banquet rich dinner", "empty government chamber seats", "wealthy elite champagne toast"],
-  self: ["tired worker head down", "man carrying heavy load", "kneeling silhouette dark", "exhausted person sitting alone"],
-  mind: ["person waking looking out window", "crowd walking busy city", "serious person thinking", "sunrise over city skyline"],
+  self: ["sheep herd flock field", "crowd walking rush hour", "people commuting subway train", "time clock punch card", "tired worker head down desk", "hamster wheel spinning"],
+  network: ["champagne poured luxury party", "private jet interior stairs", "luxury mansion pool", "business handshake suits", "expensive watch on wrist close up", "gold bars stacked"],
+  anxiety: ["close up hands counting cash", "empty wallet open hands", "government building columns", "money burning fire", "coins falling drain", "vault safe heavy door"],
+  freedom: ["breaking chains hands close up", "open road horizon driving", "bird flying sky sunset", "wild horses running free", "key unlocking lock close up", "sunrise field wind"],
+  dopamine: ["circus tent lights crowd", "crowd cheering stadium", "fireworks night crowd", "confetti falling celebration", "carnival lights people"],
+  mind: ["man slowly looking up into light", "crowd marching determined", "sunrise over city skyline", "person waking looking out window", "serious face close up thinking"],
 };
 
 function log(m) {
