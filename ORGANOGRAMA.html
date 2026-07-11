@@ -69,15 +69,17 @@
   </div>
 
   <div class="status">
-    <b>⚠ Estado hoje (Fase 1 — não está no ar).</b> O <span class="on">miolo já foi adaptado</span>
-    (marca, voz PT-BR, 29 temas nos 4 pilares, contas <code>*_UPM</code> em <code>src/lib/accounts.ts</code>,
-    coletor de pauta próprio; e em 2026-07-05 <b>todo vínculo com o Dr. Libertad foi removido da automação</b> —
-    workflows agora usam <code>secrets.SITE_URL</code>, sem domínio fixo). Mas o pipeline <b>ainda NÃO está
-    deployado nem publicando</b> nesta conta: falta o deploy (Vercel), o banco (Neon) e o token da conta (Meta), e
-    <code>scripts/lote-dia.mjs</code> diz <i>"SEM publicar (Meta token FALTA)"</i>. Hoje ele roda
-    <b>local</b> para gerar <b>amostras</b> (<code>_amostra/</code>). O diagrama abaixo mostra o pipeline
-    <b>como foi desenhado</b> — cada peça marcada <span class="warn">⚠ Fase 2</span> ainda precisa ser
-    ligada/adaptada para @umpaisdemerda. Legenda de custo: <span class="chip free">grátis</span>
+    <b>⚙ Estado hoje (Fase 2 — infra NO AR, falta só o token Meta p/ publicar).</b> Repo privado
+    <code>Fern4ando-Jose/umpaisdemerda-ig</code> + deploy Vercel <b>verde</b> em
+    <code>https://umpaisdemerda-ig.vercel.app</code> (Hobby/grátis); banco <b>Neon</b>
+    <code>umpaisdemerda-db</code> conectado (<code>POSTGRES_URL</code>) e <code>/api/migrate</code> rodado
+    (tabelas criadas); <b>Vercel Blob</b> <code>umpaisdemerda-blob</code> conectado; GitHub secrets
+    <code>SITE_URL/CRON_SECRET/ANTHROPIC_API_KEY/PEXELS_API_KEY</code> setados (2026-07-11). O <span class="on">miolo</span>
+    (marca, voz PT-BR, 29 temas, contas <code>*_UPM</code>, coletor de pauta) foi adaptado e o vínculo com o Dr.
+    Libertad removido (workflows via <code>secrets.SITE_URL</code>). <b>Falta só</b>: o token da conta (Meta
+    <code>META_*_UPM</code>) + o <code>BLOB_READ_WRITE_TOKEN</code> nos GitHub secrets → aí publica de verdade.
+    As poucas caixas ainda marcadas <span class="warn">⚠ Fase 2</span> dependem só disso.
+    Legenda de custo: <span class="chip free">grátis</span>
     <span class="chip paid">pago (passa pelo controle-gastos)</span>.
   </div>
 
@@ -124,8 +126,8 @@
         <dl class="grid">
           <dt>Host</dt><dd class="name">GitHub Actions (cron)</dd>
           <dt>Rota/comando</dt><dd>.github/workflows/instagram-posts.yml · instagram-reels.yml · instagram-reels-classic.yml</dd>
-          <dt>Código</dt><dd class="name">workflows YAML → chamam a API do site via <code>secrets.SITE_URL</code> (domínio agnóstico; sem DR) <span class="warn">⚠ Fase 2: repo/secrets UPM a criar</span></dd>
-          <dt>Conta/serviço</dt><dd class="name">GitHub (repo desta automação) <span class="warn">⚠ Fase 2: repo/secrets UPM a criar</span></dd>
+          <dt>Código</dt><dd class="name">workflows YAML → chamam a API do site via <code>secrets.SITE_URL</code> (domínio agnóstico; sem DR) <span class="warn">⚠ Fase 2: repo+deploy+4 secrets prontos; falta token Meta + BLOB_READ_WRITE_TOKEN nos secrets</span></dd>
+          <dt>Conta/serviço</dt><dd class="name">GitHub (repo desta automação) <span class="warn">⚠ Fase 2: repo+deploy+4 secrets prontos; falta token Meta + BLOB_READ_WRITE_TOKEN nos secrets</span></dd>
         </dl>
       </div>
     </div>
