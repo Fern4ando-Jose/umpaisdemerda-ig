@@ -10,6 +10,33 @@ export async function GET(req: NextRequest) {
   const { sql } = await import("@vercel/postgres");
   const results: string[] = [];
 
+  // Tabela posts — base. Numa base NOVA (deploy fresco, Neon do UPM) ela não
+  // existe; a migração histórica só fazia ALTER (assumindo o schema antigo do DR),
+  // então o 1º INSERT quebrava ("relation posts does not exist"). Cria aqui com o
+  // schema que o INSERT de publish/route.ts usa. `tags` é TEXT[] (o INSERT manda o
+  // literal `{a,b}` de array Postgres, não JSON). Idempotente: os ALTER abaixo
+  // viram no-op numa base nova e ainda cobrem bases antigas às quais falte coluna.
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS posts (
+        id                BIGSERIAL PRIMARY KEY,
+        topic             TEXT NOT NULL DEFAULT 'geral',
+        slot              TEXT NOT NULL DEFAULT 'manha',
+        title             TEXT NOT NULL DEFAULT '',
+        content           TEXT NOT NULL DEFAULT '',
+        body              TEXT NOT NULL DEFAULT '',
+        instagram_caption TEXT NOT NULL DEFAULT '',
+        tags              TEXT[] NOT NULL DEFAULT '{}',
+        instagram_post_id TEXT,
+        published_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        lang              TEXT NOT NULL DEFAULT 'es'
+      )
+    `;
+    results.push("posts table: ok");
+  } catch (e) {
+    results.push("posts table: " + String(e));
+  }
+
   // Tabela posts — colunas que podem faltar
   const postsCols = [
     { name: "topic", def: "TEXT NOT NULL DEFAULT 'geral'" },
