@@ -623,14 +623,14 @@ export async function GET(req: NextRequest) {
 
         // CAPA do carrossel: estilo JORNAL (tipografia + carimbo), SEM ilustração
         // por IA. Política aprovada pelo dono (2026-06-24): "sem charge fal" → custo
-        // de fal = ZERO. A capa não usa `img`; o JornalCover renderiza só com texto.
-        // (Para reativar a charge no futuro: gerar via generateIllustration e passar
-        //  &img=..., subindo o teto de ig-posts conforme a política do agente de gastos.)
+        // de fal = ZERO. O JornalCover renderiza só com texto (papel + tinta + carimbo).
+        // (Para reativar a charge no futuro: portar suporte a imagem de fundo no
+        //  JornalCover do /api/og — papel + scrim + imagem — e voltar a passar a URL
+        //  da fal, subindo o teto de ig-posts conforme a política do agente de gastos.)
         slotLog.illustration = "tipografia (sem fal)";
-        const imgParam = "";
 
         const slideUrls: string[] = [
-          `${base}/api/og?slide=cover&slot=${slot}&title=${enc(content.postTitle)}&kw=${enc(kw)}&ed=${ed}&mood=${mood}&tag=${tag}&cat=${cat}&motif=${motif}${imgParam}&total=${totalSlides}&lang=${lang}`,
+          `${base}/api/og?slide=cover&slot=${slot}&title=${enc(content.postTitle)}&kw=${enc(kw)}&ed=${ed}&mood=${mood}&tag=${tag}&cat=${cat}&motif=${motif}&total=${totalSlides}&lang=${lang}`,
           ...content.slides.map((text, i) =>
             `${base}/api/og?slide=insight&slot=${slot}&text=${enc(text)}&num=${i + 2}&total=${totalSlides}&kw=${enc(kw)}&ed=${ed}&mood=${mood}&tag=${tag}&cat=${cat}&motif=${motif}&lang=${lang}`
           ),

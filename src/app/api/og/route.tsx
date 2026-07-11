@@ -129,23 +129,6 @@ function detectCat(s: string): Cat {
   return "freedom";
 }
 
-// ─── Fetch da ilustração com timeout + fallback ──────────────────────────────
-// O satori (next/og) busca <img src> server-side SEM timeout: uma fal lenta
-// bloqueava o og por ~9s → o Instagram estourava o próprio timeout de download
-// da mídia (9004 "media could not be fetched"). Aqui buscamos a imagem nós
-// mesmos com AbortController curto e embutimos como data-URI. Em qualquer falha
-// (timeout, não-200, não-imagem) devolvemos undefined → a capa cai no fallback, em vez de
-// renderizar uma imagem em branco.
-function arrayBufferToBase64(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let bin = "";
-  const chunk = 0x8000; // evita estourar o stack do String.fromCharCode
-  for (let i = 0; i < bytes.length; i += chunk) {
-    bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(bin);
-}
-
 // ─── CAPA estilo JORNAL (identidade Um País de Merda) ─────────────────────────
 // Autossuficiente (não usa moldura compartilhada). Papel + tinta + carimbo vermelho + dateline.
 function JornalCover({ title, label, issueNo, stamp, dateline }: {
@@ -321,23 +304,6 @@ function JornalReel({ RW, RH, issueNo, kicker, title, hl, foot, fam, hlmode }: {
   );
 }
 
-async function fetchImageDataUri(url: string, timeoutMs: number): Promise<string | undefined> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { signal: ctrl.signal });
-    if (!res.ok) return undefined;
-    const ct = res.headers.get("content-type") || "image/jpeg";
-    if (!ct.startsWith("image/")) return undefined;
-    const buf = await res.arrayBuffer(); // o abort cobre também a leitura do corpo
-    return `data:${ct};base64,${arrayBufferToBase64(buf)}`;
-  } catch {
-    return undefined; // timeout/DNS/rede → motivo abstrato
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 // ─── Handler principal ────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
@@ -366,14 +332,6 @@ export async function GET(req: NextRequest) {
     // Seed estável por POST (mesmo em todas as slides do carrossel) → desenho único
     const seedParam = searchParams.get("seed");
     const seed = seedParam ? hashStr(seedParam) : hashStr(`${issue}|${kw}|${cat}|${motif}`);
-
-    // Ilustração por IA (capa): URL pública vinda do /api/publish. Ausente → motivo.
-    const imgUrl = searchParams.get("img") || undefined;
-    // Só a capa usa a ilustração; buscamos com timeout curto (bem abaixo do teto
-    // de download do Instagram) e embutimos. Falha/timeout → undefined → motivo.
-    const img = imgUrl && slide !== "insight" && slide !== "cta"
-      ? await fetchImageDataUri(imgUrl, 3000)
-      : undefined;
 
     const fontBold = await loadFraunces();
 
