@@ -118,9 +118,10 @@
     <div class="node host">
       <div class="step">1 · Gatilho — o relógio dispara sozinho</div>
       <h3>O cron acorda o pipeline no horário</h3>
-      <p class="desc">Nos picos do Instagram (BRT), o agendador dispara um post. Plano previsto: ~2 carrosséis/dia
-        + 3 Reels de vídeo/dia + 1 Reel clássico. O <code>run</code> (0..5) vem da expressão cron, e define o
-        tom (manhã/tarde/noite) e a vaga do dia.</p>
+      <p class="desc">Nos picos do Instagram (BRT), o agendador dispara um post. <b>Cadência ligada (2026-07-11):
+        4/dia = 2 carrosséis (09:17 · 14:17) + 2 reels de vídeo (12:17 · 17:17).</b> O reel <b>clássico</b> (19:17)
+        está com o cron DESLIGADO (depende de fal, P2) — só disparo manual. Sustentável: 31 temas ÷ trava de 7 dias
+        ≈ 4/dia. O <code>run</code> (0..5) vem da expressão cron e define o tom (manhã/tarde/noite) e a vaga do dia.</p>
       <div class="infra">
         <div class="lbl">Infra desta peça <span class="chip free">grátis</span></div>
         <dl class="grid">
