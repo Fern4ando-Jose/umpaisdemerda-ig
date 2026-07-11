@@ -9,8 +9,12 @@ name: Instagram Reel CLÁSSICO — Um País de Merda
 # e o preview com ?illus=1 (gera a ilustração de fundo).
 
 on:
-  schedule:
-    - cron: "17 22 * * *" # 19:17 BRT (run 3)
+  # Cron DESLIGADO 2026-07-11: cadência acordada = 2 carrosséis + 2 reels/dia (4/dia).
+  # O reel CLÁSSICO depende da ilustração fal (?illus=1), que está desligada no UPM
+  # (FAL_KEY placeholder, P2). Segue disponível por disparo MANUAL (workflow_dispatch).
+  # Para religar: descomente as 2 linhas abaixo.
+  # schedule:
+  #   - cron: "17 22 * * *" # 19:17 BRT (run 3)
   workflow_dispatch:
     inputs:
       run:
