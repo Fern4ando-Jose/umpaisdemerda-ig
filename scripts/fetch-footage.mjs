@@ -195,7 +195,12 @@ async function shareClips(props, clips) {
   if (!secret || !topic) {
     return log(`writeback pulado (${!secret ? "sem CRON_SECRET" : "sem topic nos props"}) — footage não compartilhado`);
   }
-  const base = process.env.PRODUCTION_URL || "https://www.drlibertad.com";
+  // Base = URL de produção DESTE projeto (SITE_URL, mesma env que os workflows usam).
+  // NUNCA cair num domínio de outro projeto: sem base configurada → pula o writeback.
+  const base = process.env.PRODUCTION_URL || process.env.SITE_URL;
+  if (!base) {
+    return log("writeback pulado (sem PRODUCTION_URL/SITE_URL) — footage não compartilhado");
+  }
   const day = new Date().toISOString().slice(0, 10); // UTC, igual a dayUTC()
   try {
     const res = await fetch(`${base}/api/reel-share`, {

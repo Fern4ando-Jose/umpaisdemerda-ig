@@ -4,6 +4,7 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { verifyRender } from "./verify-render.mjs";
 
 const KEY = process.env.PEXELS_API_KEY;
 if (!KEY) { console.log("SEM PEXELS_API_KEY"); process.exit(1); }
@@ -51,6 +52,10 @@ const fc = "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:
 const args = ["-y","-stream_loop","-1","-i",`${dir}clip.mp4`,"-i",`${dir}s1.png`,"-i",`${dir}s2.png`,"-i",`${dir}s3.png`,
   "-filter_complex",fc,"-map","[c]","-t","12","-r","30","-an","-c:v","libx264","-pix_fmt","yuv420p","-movflags","+faststart",`${dir}reel-teste.mp4`];
 execFileSync("ffmpeg", args, { stdio:"inherit" });
+
+// 3b) verificação pós-render: 9:16 (1080×1920), vídeo, sem áudio (reel sem música)
+const chk = verifyRender(`${dir}reel-teste.mp4`, { w: 1080, h: 1920, expectAudio: false });
+console.log(`verify-render OK: ${chk.width}×${chk.height} ${chk.vcodec} ${chk.durationSec}s áudio=${chk.hasAudio ? "sim" : "não"}`);
 
 // 4) stills compostos (PNG visível) p/ aprovação inline
 for (const [t,f] of [["2","frame-1.png"],["6","frame-2.png"],["10","frame-3.png"]]) {

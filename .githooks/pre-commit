@@ -1,0 +1,25 @@
+#!/bin/sh
+# Pre-commit (versionado) — roda a suíte vitest antes de aceitar o commit.
+# Espelha o ci.yml (que roda `npm run test` em PR/push): pega quebra ANTES do
+# commit, não só no CI. Ligado via `git config core.hooksPath .githooks`.
+#
+# Pular pontualmente:  SKIP_TESTS=1 git commit ...
+# (o guard de segredos do workspace é um hook do Claude Code, independente deste.)
+set -e
+
+if [ "$SKIP_TESTS" = "1" ]; then
+  echo "[pre-commit] SKIP_TESTS=1 → testes pulados"
+  exit 0
+fi
+
+if [ ! -d node_modules ]; then
+  echo "[pre-commit] node_modules ausente → testes pulados (rode 'npm ci' para ativar o gate)"
+  exit 0
+fi
+
+echo "[pre-commit] rodando vitest (fork único, leve)…"
+# Fork único de propósito: em máquinas com pouca RAM o pool paralelo do vitest
+# estoura (VirtualAlloc/IPC) e gera falso-negativo. O CI (ci.yml) roda o
+# `npm run test` paralelo padrão, com folga de recursos.
+npm run test --silent -- --pool=forks --poolOptions.forks.singleFork
+echo "[pre-commit] ✓ testes verdes — commit liberado"

@@ -18,6 +18,7 @@ import { renderMedia, selectComposition } from "@remotion/renderer";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { verifyRender } from "./verify-render.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, ".."); // raiz do projeto
@@ -91,6 +92,20 @@ async function main() {
   });
 
   console.log(`[render] pronto → ${outputLocation}`);
+
+  // ─── 5. Verificação pós-render (ffprobe) ────────────────────────────────────
+  // Antes de subir para o Instagram, confirma 9:16 + vídeo H.264/yuv420p +
+  // duração > 0. Falha aqui aborta o publish (evita mídia rejeitada com 9004).
+  // Áudio fica opcional: a decisão travada é "reels sem música".
+  const check = verifyRender(outputLocation, {
+    w: composition.width,
+    h: composition.height,
+    minDurationSec: 1,
+  });
+  console.log(
+    `[render] verify-render OK: ${check.width}×${check.height} ${check.vcodec} ` +
+      `${check.durationSec}s áudio=${check.hasAudio ? "sim" : "não"}`
+  );
 }
 
 main().catch((err) => {

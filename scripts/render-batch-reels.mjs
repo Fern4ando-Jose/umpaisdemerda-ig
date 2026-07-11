@@ -3,6 +3,7 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { verifyRender } from "./verify-render.mjs";
 
 const KEY = process.env.PEXELS_API_KEY;
 if (!KEY) { console.log("SEM PEXELS_API_KEY"); process.exit(1); }
@@ -74,8 +75,9 @@ for (const reel of REELS){
   const args = ["-y","-stream_loop","-1","-i",`${dir}${reel.id}.mp4`,...pngs.flatMap(p=>["-i",p]),
     "-filter_complex",fc,"-map","[c]","-t","12","-r","30","-an","-c:v","libx264","-pix_fmt","yuv420p","-movflags","+faststart",`${dir}reel-${reel.id}.mp4`];
   execFileSync("ffmpeg", args, { stdio:"ignore" });
+  verifyRender(`${dir}reel-${reel.id}.mp4`, { w: 1080, h: 1920, expectAudio: false });
   execFileSync("ffmpeg", ["-y","-ss","2","-i",`${dir}reel-${reel.id}.mp4`,"-frames:v","1",`${dir}hook-${reel.id}.png`], { stdio:"ignore" });
-  console.log(`  ✓ reel-${reel.id}.mp4 + hook-${reel.id}.png`);
+  console.log(`  ✓ reel-${reel.id}.mp4 + hook-${reel.id}.png (9:16 verificado)`);
 }
 
 // montagem dos 4 ganchos numa imagem

@@ -1,0 +1,53 @@
+name: Coletor de pauta (semanal)
+
+# Puxa as manchetes da semana (Google News RSS, grátis, sem chave) nas 4 frentes
+# e marca 🆕 o que é inédito. Dedup VERSIONADO: o histórico de hashes vive em
+# data/pauta-seen.json e é commitado de volta a cada rodada → a curadoria semanal
+# foca só no que é novo. NÃO publica nada; é insumo de pauta para o dono decidir.
+
+on:
+  schedule:
+    - cron: "0 12 * * 1" # toda segunda 12:00 UTC (09:00 BRT)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write # para commitar o data/pauta-seen.json atualizado
+
+concurrency:
+  group: coletor-pauta
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Coletar pauta (marca 🆕 e atualiza dedup)
+        run: |
+          node scripts/coletor-pauta.mjs | tee pauta-out.txt
+
+      - name: Publicar no resumo do job
+        if: always()
+        run: |
+          {
+            echo '## Pauta da semana — Um País de Merda'
+            echo '```'
+            cat pauta-out.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commitar dedup atualizado (se mudou)
+        run: |
+          if [[ -n "$(git status --porcelain data/pauta-seen.json)" ]]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/pauta-seen.json
+            git commit -m "chore(pauta): atualiza dedup do coletor [skip ci]"
+            git push
+          else
+            echo "sem novidades no dedup — nada a commitar"
+          fi
