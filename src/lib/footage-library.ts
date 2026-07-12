@@ -11,6 +11,9 @@ export type FootageClip = { url: string; poster?: string; why?: string };
 export const FOOTAGE_LIBRARY: Record<string, FootageClip[]> = {
   // O SERVO — o rebanho que consente (rebanho, metrô lotado, escada rolante, operário exausto)
   self: [
+    // ── Pixabay (2ª fonte curada, QA visual 2026-07-12) ──
+    { url: "https://cdn.pixabay.com/video/2024/01/21/197531-905015052_large.mp4", why: "multidão anônima marchando em massa pela rua — rebanho humano" },
+    { url: "https://cdn.pixabay.com/video/2023/03/31/156965-813912951_large.mp4", why: "rebanho de ovelhas caminhando em fila pelo pasto" },
     { url: "https://videos.pexels.com/video-files/37985321/16119613_1080_1920_25fps.mp4", why: "ovelha encara a câmera no meio do rebanho" },
     { url: "https://videos.pexels.com/video-files/38411462/16310404_1080_1920_30fps.mp4", why: "rebanho conduzido pela estrada ao anoitecer" },
     { url: "https://videos.pexels.com/video-files/31200414/13327370_1080_1920_60fps.mp4", why: "ovelha pastando de cabeça baixa" },
@@ -36,6 +39,10 @@ export const FOOTAGE_LIBRARY: Record<string, FootageClip[]> = {
   ],
   // A CASTA — quem vive às suas custas (champanhe, jato, mármore, banquete, alta gastronomia)
   network: [
+    // ── Pixabay (2ª fonte curada, QA visual 2026-07-12) ──
+    { url: "https://cdn.pixabay.com/video/2026/05/07/351290_large.mp4", why: "convés de megaiate iluminado, a casta jantando ao pôr do sol" },
+    { url: "https://cdn.pixabay.com/video/2026/06/22/360151_large.mp4", why: "taças de champanhe brindando em festa dourada — a casta celebrando" },
+    { url: "https://cdn.pixabay.com/video/2025/04/27/275054_large.mp4", why: "jatinho, cobertura panorâmica e champanhe — a casta em Dubai" },
     { url: "https://videos.pexels.com/video-files/8765266/8765266-hd_1080_1920_25fps.mp4", why: "taça de champanhe em foco, multidão desfocada" },
     { url: "https://videos.pexels.com/video-files/6624854/6624854-hd_1080_1920_30fps.mp4", why: "mão com taça sob spotlight vermelho, dramático" },
     { url: "https://videos.pexels.com/video-files/29470443/12685760_1080_1920_30fps.mp4", why: "jato privado na pista ao entardecer" },
@@ -91,6 +98,9 @@ export const FOOTAGE_LIBRARY: Record<string, FootageClip[]> = {
   ],
   // LIBERDADE — a saída (porta abrindo, cavalo/pássaro livre, estrada aberta, cume, punho erguido)
   freedom: [
+    // ── Pixabay (2ª fonte curada, QA visual 2026-07-12) ──
+    { url: "https://cdn.pixabay.com/video/2025/05/24/281376_large.mp4", why: "águia dourada soberana, olhar fixo, cordilheira ao fundo" },
+    { url: "https://cdn.pixabay.com/video/2024/02/18/201042-914542970_large.mp4", why: "condor planando sozinho sobre a cordilheira" },
     { url: "https://videos.pexels.com/video-files/10350799/10350799-hd_720_1280_30fps.mp4", why: "porta abrindo para montanha ao amanhecer" },
     { url: "https://videos.pexels.com/video-files/4547598/4547598-hd_720_1280_50fps.mp4", why: "silhueta caminhando para a luz de um portal" },
     { url: "https://videos.pexels.com/video-files/12155272/12155272-hd_720_1280_30fps.mp4", why: "porta em arco de pedra abrindo pro céu azul" },
