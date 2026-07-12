@@ -4,6 +4,7 @@ import { Lang, accountFor, getLang } from "@/lib/accounts";
 import { type Automation, checkBudget, logSpend, anthropicCost, EST_RUN_COST } from "@/lib/spend";
 import { parseContentJson } from "@/lib/content-json";
 import { dayUTC, reelSharedKey, hashStr, readReelShared, writeReelShared, selectFootage } from "@/lib/reel-shared";
+import { pickNewsTopic, copyLeaksName } from "@/lib/pauta-semana";
 import { readContentCache, writeContentCache } from "@/lib/content-cache";
 import { recordRun, recentTopicsAllLangs, runAlreadyPublished } from "@/lib/run-ledger";
 import { buildRotation, topicIndexForRun, slotForRun, pickFreshTopicIndex } from "@/lib/rotation";
@@ -210,7 +211,8 @@ async function generateContent(
   searchResults: SearchResult[],
   slot: Slot,
   lang: Lang = "pt",
-  automation: Automation
+  automation: Automation,
+  newsInspiration?: string, // 2ª frente: manchete real da semana como GATILHO do padrão
 ): Promise<GeneratedContent> {
   const acc = accountFor(lang);
   const L = acc.langName; // "español" | "português do Brasil"
@@ -220,6 +222,13 @@ async function generateContent(
 
   const marketSection = acc.marketBrief
     ? `\nMERCADO / VOZ NATIVA — LEIA ANTES DE TUDO (vale mais que qualquer exemplo abaixo):\n${acc.marketBrief}\n`
+    : "";
+
+  // 2ª FRENTE (corrupção da semana): a manchete real entra só como GATILHO do
+  // PADRÃO. A régua apartidária abaixo continua INVIOLÁVEL — o post é atemporal e
+  // NÃO cita nada da manchete. (Backstop de código copyLeaksName rejeita se vazar.)
+  const newsSection = newsInspiration
+    ? `\nGATILHO DA SEMANA (uma manchete REAL do noticiário, use APENAS como faísca para achar o PADRÃO por trás — casta/Estado/servidão): "${newsInspiration}"\nOBRIGATÓRIO: NÃO cite, NÃO parafraseie e NÃO deixe reconhecer nada dessa manchete — nem nomes, siglas, partidos, cargos, instituições, lugares, datas ou o fato específico. Extraia só o MECANISMO atemporal e escreva sobre ELE. Se não der pra abstrair sem entregar a manchete, escreva sobre o padrão do pilar de forma genérica.\n`
     : "";
 
   const prompt = `Você é o editor de "${acc.brand}" (${acc.handle}), uma página brasileira de SÁTIRA POLÍTICA LIBERTÁRIA, ANTI-CASTA E APARTIDÁRIA.
@@ -234,6 +243,7 @@ REGRA DE MARCA (${acc.brand}): todo tema é puxado para o eixo SERVIDÃO VOLUNT�
 VOZ EDITORIAL: direta, mordaz, irônica, sem medo da POLÊMICA — a polêmica é a ferramenta, não o acidente; é o que gera alcance e debate. Diz VERDADES INCÔMODAS de forma LITERAL: nunca suavize, relativize nem "equilibre" pra deixar confortável — a força da frase É o produto. O ESPELHO é o coração: a culpa não é só "deles" lá em cima; é também do servo voluntário que aplaude embaixo. Provoque o LEITOR a se enxergar.
 
 RÉGUA APARTIDÁRIA (inviolável): o alvo é a CLASSE POLÍTICA INTEIRA e o ESTADO inchado — esquerda E direita, governo E oposição. NUNCA defenda nem ataque um partido, lado, governo ou figura específica; NUNCA cite nomes, siglas ou fatos do noticiário. A crítica é ao SISTEMA e ao COMPORTAMENTO do povo — atemporal.
+${newsSection}
 
 A provocação vem da IDEIA, NUNCA do ódio: ataca o sistema, a casta abstrata e o comodismo — JAMAIS uma pessoa ou grupo (por região, classe, raça, orientação, religião). Nunca insulte, desumanize nem incite violência — isso derruba a conta. Incomode com argumento e ironia, não com xingamento gratuito.
 
@@ -595,7 +605,18 @@ export async function GET(req: NextRequest) {
         let content = (await readContentCache(topic, dayUTC(now), lang)) as GeneratedContent | null;
         if (!content) {
           const searchResults = await searchTopic(topic, "ig-posts");
-          content = await generateContent(topic, searchResults, slot, lang, "ig-posts");
+          // 2ª FRENTE (corrupção da semana): no slot "noite", puxa uma manchete real
+          // como GATILHO do padrão (apartidário; a régua + a guarda abaixo protegem).
+          const news = slot === "noite" ? pickNewsTopic(hashStr(`${dayUTC(now)}|${runIndex}`)) : null;
+          content = await generateContent(topic, searchResults, slot, lang, "ig-posts", news?.headline);
+          // GUARDA anti-vazamento: se a copy citou nome/partido/instituição/sigla,
+          // REFAZ sem a notícia (tema fixo puro). Backstop de código da régua.
+          if (news && copyLeaksName([content.postTitle, ...(content.slides || []), content.cta, content.instagramCaption])) {
+            slotLog.newsGuard = "descartou notícia (vazou nome) → tema fixo";
+            content = await generateContent(topic, searchResults, slot, lang, "ig-posts");
+          } else if (news) {
+            slotLog.newsFront = true;
+          }
           await writeContentCache(topic, dayUTC(now), lang, content);
         }
         slotLog.title = content.postTitle;
