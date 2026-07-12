@@ -11,10 +11,14 @@ name: Instagram Reels — Um País de Merda
 # (github.event.schedule), não da hora do relógio — pra atraso do cron não colidir
 # com o run vizinho. Slot/tom = SLOT_FOR_RUN[run].
 on:
-  schedule:
-    - cron: "17 15 * * *" # 12:17 BRT (run 0)
-    - cron: "17 20 * * *" # 17:17 BRT (run 1)
-    - cron: "17 0 * * *"  # 21:17 BRT (run 2)
+  # CRONS PAUSADOS 2026-07-12: o footage do Pexels (busca ao vivo) estava saindo
+  # DESCASADO do texto + com marcos EUA + cena imprópria (casal). Pausado até a
+  # curadoria de footage estar pronta e um reel de teste aprovado pelo dono (P4).
+  # Carrosséis (instagram-posts.yml) seguem normais. Religar: descomentar as 3 linhas.
+  # schedule:
+  #   - cron: "17 15 * * *" # 12:17 BRT (run 0)
+  #   - cron: "17 20 * * *" # 17:17 BRT (run 1)
+  #   - cron: "17 0 * * *"  # 21:17 BRT (run 2)
   workflow_dispatch:
     inputs:
       run:
