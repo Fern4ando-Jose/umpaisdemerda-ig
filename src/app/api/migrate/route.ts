@@ -10,6 +10,19 @@ export async function GET(req: NextRequest) {
   const { sql } = await import("@vercel/postgres");
   const results: string[] = [];
 
+  // ?clearReelCache=1 — invalida o cache de footage compartilhado (reel_shared_cache).
+  // Usado ao trocar a fonte de footage (busca ao vivo → biblioteca curada): os
+  // tópicos já cacheados têm clipes ANTIGOS (ruins); limpar força reseleção do
+  // whitelist novo. Best-effort; a tabela pode nem existir ainda.
+  if (req.nextUrl.searchParams.get("clearReelCache") === "1") {
+    try {
+      const r = await sql`DELETE FROM reel_shared_cache`;
+      return NextResponse.json({ ok: true, cleared: "reel_shared_cache", rows: r.rowCount ?? 0 });
+    } catch (e) {
+      return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });
+    }
+  }
+
   // Tabela posts — base. Numa base NOVA (deploy fresco, Neon do UPM) ela não
   // existe; a migração histórica só fazia ALTER (assumindo o schema antigo do DR),
   // então o 1º INSERT quebrava ("relation posts does not exist"). Cria aqui com o

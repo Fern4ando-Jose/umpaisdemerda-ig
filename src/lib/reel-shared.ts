@@ -10,6 +10,20 @@
 // TUDO best-effort/fail-open: qualquer falha de banco/Pexels devolve null e o
 // pipeline segue como antes (cada idioma busca o seu). Nunca quebra a publicação.
 
+import { FOOTAGE_LIBRARY, beatPillars } from "./footage-library";
+
+// Sorteio determinístico por seed (LCG) — mesmo (tópico,dia) → mesmos clipes ES/PT.
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const a = arr.slice();
+  let s = seed >>> 0 || 1;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    const j = s % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export interface SearchResult { title: string; content: string; url: string }
 
 export interface ReelSharedBundle {
@@ -191,6 +205,27 @@ export async function selectFootage(
   seed: number,
   numClips = 5, // 5 cenas do Reel (capa + 3 insights + CTA) → 5 clipes distintos
 ): Promise<string[]> {
+  // ── PRIMÁRIO: biblioteca CURADA por pilar (whitelist vetado à mão) ──────────
+  // Sorteia 1 clipe por cena seguindo o ARCO (gancho→…→contraste da casta→virada),
+  // sem repetir clipe no mesmo reel, determinístico por (tópico,dia). Mata a roleta
+  // do Pexels ao vivo (que trazia marcos EUA / cena imprópria). Só cai na busca ao
+  // vivo se o pilar do post ainda não tem biblioteca curada.
+  const catLib = FOOTAGE_LIBRARY[cat] || [];
+  if (catLib.length) {
+    const arc = beatPillars(cat, numClips);
+    const used = new Set<string>();
+    const picked: string[] = [];
+    for (let i = 0; i < numClips; i++) {
+      const pillar = arc[i];
+      const pool = FOOTAGE_LIBRARY[pillar]?.length ? FOOTAGE_LIBRARY[pillar] : catLib;
+      const urls = seededShuffle(pool.map((c) => c.url), seed + i * 97);
+      const url = urls.find((u) => !used.has(u)) ?? urls[0];
+      if (url) { used.add(url); picked.push(url); }
+    }
+    if (picked.length) return picked;
+  }
+
+  // ── FALLBACK: busca ao vivo no Pexels (só p/ pilar sem biblioteca curada) ────
   const key = process.env.PEXELS_API_KEY;
   if (!key) return [];
   const fromClaude = (Array.isArray(videoQueries) ? videoQueries : []).filter((t) => typeof t === "string" && t.trim());
