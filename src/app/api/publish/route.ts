@@ -228,7 +228,7 @@ async function generateContent(
   // PADRÃO. A régua apartidária abaixo continua INVIOLÁVEL — o post é atemporal e
   // NÃO cita nada da manchete. (Backstop de código copyLeaksName rejeita se vazar.)
   const newsSection = newsInspiration
-    ? `\nGATILHO DA SEMANA (uma manchete REAL do noticiário, use APENAS como faísca para achar o PADRÃO por trás — casta/Estado/servidão): "${newsInspiration}"\nOBRIGATÓRIO: NÃO cite, NÃO parafraseie e NÃO deixe reconhecer nada dessa manchete — nem nomes, siglas, partidos, cargos, instituições, lugares, datas ou o fato específico. Extraia só o MECANISMO atemporal e escreva sobre ELE. Se não der pra abstrair sem entregar a manchete, escreva sobre o padrão do pilar de forma genérica.\n`
+    ? `\nGATILHO DA SEMANA (uma manchete REAL do noticiário, use APENAS como faísca para achar o PADRÃO por trás — casta/Estado/servidão): "${newsInspiration}"\nOBRIGATÓRIO: NÃO cite, NÃO parafraseie e NÃO deixe reconhecer nada dessa manchete — nem nomes, siglas, partidos, cargos, instituições, lugares, datas ou o fato específico. Extraia só o MECANISMO atemporal e escreva sobre ELE. Se não der pra abstrair sem entregar a manchete, escreva sobre o padrão do pilar de forma genérica.\nCAIXA: escreva o título e os insights em CAIXA NORMAL de frase (só a inicial maiúscula) — NUNCA Title Case (não capitalize cada palavra) nem TUDO MAIÚSCULO; a tela já deixa o título em maiúsculas sozinha.\n`
     : "";
 
   const prompt = `Você é o editor de "${acc.brand}" (${acc.handle}), uma página brasileira de SÁTIRA POLÍTICA LIBERTÁRIA, ANTI-CASTA E APARTIDÁRIA.
