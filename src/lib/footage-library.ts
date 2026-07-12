@@ -43,7 +43,7 @@ export const FOOTAGE_LIBRARY: Record<string, FootageClip[]> = {
   ],
   // O ESTADO QUE ROUBA — a mão no seu bolso (contar dinheiro, carteira vazia, colunas, cofre, ralo)
   anxiety: [
-    { url: "https://videos.pexels.com/video-files/34993441/14825522_720_1280_25fps.mp4", why: "mãos contando cédulas em luz baixa" },
+    // (removido 34993441 na QA visual: cédulas polonesas com "NARODOWY BANK POLSKI" legível)
     { url: "https://videos.pexels.com/video-files/7924953/7924953-hd_720_1280_24fps.mp4", why: "mãos abrindo carteira preta com cartões" },
     { url: "https://videos.pexels.com/video-files/35072497/14856828_720_1280_60fps.mp4", why: "mão segurando carteira gasta — o bolso do cidadão" },
     { url: "https://videos.pexels.com/video-files/34650055/14686104_720_1280_30fps.mp4", why: "fachada de parlamento com colunas" },
@@ -54,7 +54,7 @@ export const FOOTAGE_LIBRARY: Record<string, FootageClip[]> = {
     { url: "https://videos.pexels.com/video-files/7080902/7080902-hd_720_1280_30fps.mp4", why: "moedas escorrendo de cofrinho preto" },
     { url: "https://videos.pexels.com/video-files/35069364/14855389_720_1280_30fps.mp4", why: "mecanismo de porta pesada de cofre" },
     { url: "https://videos.pexels.com/video-files/6964001/6964001-hd_720_1280_25fps.mp4", why: "mão sobre calculadora em luz baixa — imposto" },
-    { url: "https://videos.pexels.com/video-files/34719410/14717156_720_1280_25fps.mp4", why: "mão assinando documento oficial (texto ilegível)" },
+    // (removido 34719410 na QA visual: documento assinado com texto de formulário legível)
     { url: "https://videos.pexels.com/video-files/8103766/8103766-hd_720_1366_25fps.mp4", why: "moedas e cédulas espalhadas em pano preto" },
   ],
   // LIBERDADE — a saída (porta abrindo, cavalo/pássaro livre, estrada aberta, cume, punho erguido)
