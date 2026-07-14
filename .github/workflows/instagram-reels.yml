@@ -128,16 +128,11 @@ jobs:
             console.log("REEL_PROPS montado (run", "'"${{ steps.params.outputs.run }}"'", "):", JSON.stringify(props).slice(0, 280));
           '
 
-      # 5b. Busca footage REAL de banco (Pexels, grátis) no tema do post → clipes de
-      #     fundo (movimento real, 5 cenas). NÃO-FATAL: sem PEXELS_API_KEY ou sem
-      #     match, segue sem clips e o Reel usa a ilustração estática.
-      - name: Buscar footage (Pexels) → clipes de fundo
-        env:
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          FOOTAGE_NUM_CLIPS: "5"
-          # writeback: se a Pexels for usada aqui (fallback), compartilha o footage
-          # achado com a outra conta via /api/reel-share (mesmo vídeo ES↔PT).
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      # 5b. Confere o footage CURADO já resolvido pela API (biblioteca vetada à mão,
+      #     compartilhada ES↔PT por tópico/dia). NÃO busca mais Pexels ao vivo (roleta
+      #     não-vetada — fechado por segurança). NÃO-FATAL: sem clips, o Reel usa a
+      #     ilustração estática (fallback seguro, garantido pelo guarda anti-preto).
+      - name: Conferir footage curado (sem Pexels ao vivo)
         run: node scripts/fetch-footage.mjs --props=reel-props.json
 
       # 5c. Guarda anti-preto (#3) — cascata footage → ilustração → pular.

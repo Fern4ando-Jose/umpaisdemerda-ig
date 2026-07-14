@@ -147,125 +147,40 @@ export async function writeReelSharedClips(input: ShareClipsInput): Promise<void
   } catch { /* best-effort — nunca quebra o pipeline do CI */ }
 }
 
-// ─── Seleção de footage (Pexels) ──────────────────────────────────────────────
-// Portado de scripts/fetch-footage.mjs, com UMA diferença: o seed de
-// diversificação vem de (tópico, dia), NÃO do @handle/edição — assim ES e PT do
-// mesmo run escolhem o MESMO clipe. A diversidade entre DIAS/tópicos é mantida.
+// ─── Seleção de footage (biblioteca CURADA, custo zero, 100% vetado) ──────────
+// Footage vem SEMPRE do whitelist FOOTAGE_LIBRARY (clipes vetados à mão). NÃO há
+// busca ao vivo no Pexels: aquela roleta não-vetada já trouxe marco dos EUA e cena
+// imprópria. O seed de diversificação vem de (tópico, dia), NÃO do @handle/edição
+// → ES e PT do mesmo run escolhem o MESMO clipe; a diversidade entre DIAS/tópicos
+// é mantida.
 
-const PER_PAGE = 20;
-
-// Fallback por categoria — só usado se não houver videoQueries no tema.
-// Arquétipos POLÍTICOS por pilar (@umpaisdemerda), não literais: símbolo concreto,
-// close/rosto/movimento. Mapa cat→pilar: self=O SERVO · network=A CASTA ·
-// anxiety=O ESTADO que rouba · freedom=LIBERDADE · dopamine=PÃO E CIRCO · mind=O DESPERTAR.
-// (Antes eram os termos anti-dopamina herdados do Dr. Libertad — celular/scroll — errados p/ política.)
-const CAT_TERMS: Record<string, string[]> = {
-  self:    ["sheep herd flock field", "crowd walking rush hour", "people commuting subway train", "time clock punch card", "tired worker head down desk", "hamster wheel spinning"],
-  network: ["champagne poured luxury party", "private jet interior stairs", "luxury mansion pool", "business handshake suits", "expensive watch on wrist close up", "gold bars stacked"],
-  anxiety: ["close up hands counting cash", "empty wallet open hands", "government building columns", "money burning fire", "coins falling drain", "vault safe heavy door"],
-  freedom: ["breaking chains hands close up", "open road horizon driving", "bird flying sky sunset", "wild horses running free", "key unlocking lock close up", "sunrise field wind"],
-  dopamine:["circus tent lights crowd", "crowd cheering stadium", "fireworks night crowd", "confetti falling celebration", "carnival lights people"],
-  mind:    ["man slowly looking up into light", "crowd marching determined", "sunrise over city skyline", "person waking looking out window", "serious face close up thinking"],
-};
-
-function rotate<T>(arr: T[], n: number): T[] {
-  if (!Array.isArray(arr) || arr.length <= 1) return arr || [];
-  const k = ((n % arr.length) + arr.length) % arr.length;
-  return arr.slice(k).concat(arr.slice(0, k));
-}
-
-// Escolhe o melhor arquivo: retrato, ~1080p (evita 4K pesado no render do CI).
-function pickFile(video: any): string | null {
-  const files = (video.video_files || []).filter((f: any) => f.link && f.width && f.height);
-  if (!files.length) return null;
-  const portrait = files.filter((f: any) => f.height >= f.width);
-  const pool = portrait.length ? portrait : files;
-  pool.sort((a: any, b: any) => {
-    const sa = (a.width <= 1440 ? 0 : 1) * 1e6 + Math.abs(a.width - 1080);
-    const sb = (b.width <= 1440 ? 0 : 1) * 1e6 + Math.abs(b.width - 1080);
-    return sa - sb;
-  });
-  return pool[0].link;
-}
-
-async function searchTerm(term: string, key: string): Promise<any[]> {
-  const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(term)}&orientation=portrait&size=medium&per_page=${PER_PAGE}`;
-  const res = await fetch(url, { headers: { Authorization: key } });
-  if (!res.ok) return [];
-  const data = await res.json().catch(() => ({} as any));
-  const vids = Array.isArray(data.videos) ? data.videos : [];
-  return vids.filter((v: any) => v.height >= v.width && (v.duration || 0) >= 4);
-}
-
-// Seleciona até numClips URLs de footage no tema. seed é (tópico,dia) → idêntico
-// entre ES e PT. Retorna [] se Pexels indisponível (→ fallback no script de CI).
+// Seleciona numClips URLs de footage curado, 1 por cena seguindo o ARCO
+// (gancho→…→contraste da casta→virada), sem repetir clipe no mesmo reel,
+// determinístico por (tópico,dia). `videoQueries` não é mais usado na seleção
+// (mantido na assinatura para compatibilidade com os chamadores). Só devolve []
+// se a biblioteca inteira estiver vazia → o Reel cai no fallback SEGURO de última
+// instância (ilustração estática). NUNCA busca Pexels ao vivo.
 export async function selectFootage(
-  videoQueries: string[],
+  _videoQueries: string[],
   cat: string,
   seed: number,
   numClips = 5, // 5 cenas do Reel (capa + 3 insights + CTA) → 5 clipes distintos
 ): Promise<string[]> {
-  // ── PRIMÁRIO: biblioteca CURADA por pilar (whitelist vetado à mão) ──────────
-  // Sorteia 1 clipe por cena seguindo o ARCO (gancho→…→contraste da casta→virada),
-  // sem repetir clipe no mesmo reel, determinístico por (tópico,dia). Mata a roleta
-  // do Pexels ao vivo (que trazia marcos EUA / cena imprópria). Só cai na busca ao
-  // vivo se o pilar do post ainda não tem biblioteca curada.
-  const catLib = FOOTAGE_LIBRARY[cat] || [];
-  if (catLib.length) {
-    const arc = beatPillars(cat, numClips);
-    const used = new Set<string>();
-    const picked: string[] = [];
-    for (let i = 0; i < numClips; i++) {
-      const pillar = arc[i];
-      const pool = FOOTAGE_LIBRARY[pillar]?.length ? FOOTAGE_LIBRARY[pillar] : catLib;
-      const urls = seededShuffle(pool.map((c) => c.url), seed + i * 97);
-      const url = urls.find((u) => !used.has(u)) ?? urls[0];
-      if (url) { used.add(url); picked.push(url); }
-    }
-    if (picked.length) return picked;
-  }
-
-  // ── FALLBACK: busca ao vivo no Pexels (só p/ pilar sem biblioteca curada) ────
-  const key = process.env.PEXELS_API_KEY;
-  if (!key) return [];
-  const fromClaude = (Array.isArray(videoQueries) ? videoQueries : []).filter((t) => typeof t === "string" && t.trim());
-  const fallback = (CAT_TERMS[cat] || CAT_TERMS.freedom).slice();
-
+  const arc = beatPillars(cat, numClips);
+  // Rede de segurança: se um pilar do arco vier vazio (cat desconhecido), sorteia
+  // da UNIÃO de todos os clipes curados — ainda 100% vetado, jamais Pexels cru.
+  const allCurated = Object.values(FOOTAGE_LIBRARY).flatMap((l) => l.map((c) => c.url));
+  const used = new Set<string>();
   const picked: string[] = [];
-  const seen = new Set<number>();
-
-  // Round-robin entre os termos: 1 clipe de CADA termo por passada → diverso e no tema.
-  async function harvest(termList: string[]) {
-    const queues: { vids: any[]; i: number }[] = [];
-    for (let t = 0; t < termList.length; t++) {
-      if (picked.length >= numClips) break;
-      const vids = rotate(await searchTerm(termList[t], key!), seed + t * 7);
-      queues.push({ vids, i: 0 });
-    }
-    let progressed = true;
-    while (picked.length < numClips && progressed) {
-      progressed = false;
-      for (const q of queues) {
-        if (picked.length >= numClips) break;
-        while (q.i < q.vids.length) {
-          const v = q.vids[q.i++];
-          if (seen.has(v.id)) continue;
-          const link = pickFile(v);
-          if (!link) continue;
-          seen.add(v.id);
-          picked.push(link);
-          progressed = true;
-          break;
-        }
-      }
-    }
-  }
-
-  try {
-    if (fromClaude.length) await harvest(fromClaude);
-    if (!picked.length) await harvest(fallback);
-  } catch {
-    return picked; // o que deu pra pegar (pode ser [])
+  for (let i = 0; i < numClips; i++) {
+    const pillar = arc[i];
+    const pool = FOOTAGE_LIBRARY[pillar]?.length
+      ? FOOTAGE_LIBRARY[pillar].map((c) => c.url)
+      : allCurated;
+    if (!pool.length) continue;
+    const urls = seededShuffle(pool, seed + i * 97);
+    const url = urls.find((u) => !used.has(u)) ?? urls[0];
+    if (url) { used.add(url); picked.push(url); }
   }
   return picked;
 }

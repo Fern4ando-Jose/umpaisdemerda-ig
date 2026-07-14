@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { reelSharedKey, hashStr, dayUTC, normalizeShareInput } from "./reel-shared";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { reelSharedKey, hashStr, dayUTC, normalizeShareInput, selectFootage } from "./reel-shared";
+import { FOOTAGE_LIBRARY } from "./footage-library";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INVARIANTE MULTI-IDIOMA (Reel): o VÍDEO é o MESMO entre as contas (ES, PT, …).
@@ -47,6 +48,54 @@ describe("seed do footage é determinístico e independente de conta", () => {
     expect(Number.isInteger(h)).toBe(true);
     expect(h).toBeGreaterThanOrEqual(0);
     expect(h).toBeLessThanOrEqual(0xffffffff);
+  });
+});
+
+// SEGURANÇA (footage): o Reel NUNCA busca Pexels ao vivo (roleta não-vetada que já
+// trouxe marco dos EUA / cena imprópria). selectFootage devolve SÓ clipes da
+// biblioteca CURADA (whitelist vetado à mão), para qualquer pilar, sem rede.
+describe("selectFootage é curado-only (nunca Pexels ao vivo)", () => {
+  const CATS = ["self", "network", "anxiety", "freedom", "dopamine", "mind"];
+  const curatedSet = new Set(
+    Object.values(FOOTAGE_LIBRARY).flatMap((l) => l.map((c) => c.url)),
+  );
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("cada pilar tem >= numClips (5) clipes curados — cobre o Reel sem fallback", () => {
+    for (const cat of CATS) {
+      expect(FOOTAGE_LIBRARY[cat].length).toBeGreaterThanOrEqual(5);
+    }
+  });
+
+  it("retorna 5 URLs, TODAS do whitelist curado, e NÃO chama fetch (mesmo com PEXELS_API_KEY)", async () => {
+    vi.stubEnv("PEXELS_API_KEY", "should-never-be-used");
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    for (const cat of CATS) {
+      const clips = await selectFootage(["hands counting cash"], cat, hashStr(`t|2026-07-14`));
+      expect(clips).toHaveLength(5);
+      for (const url of clips) expect(curatedSet.has(url)).toBe(true);
+    }
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("cat DESCONHECIDO cai na UNIÃO curada — jamais Pexels cru", async () => {
+    vi.stubEnv("PEXELS_API_KEY", "should-never-be-used");
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const clips = await selectFootage([], "categoria-inexistente", 12345);
+    expect(clips.length).toBeGreaterThan(0);
+    for (const url of clips) expect(curatedSet.has(url)).toBe(true);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("determinístico por seed — mesmo (tópico,dia) → mesmos clipes ES/PT", async () => {
+    const seed = hashStr(reelSharedKey("Dopamina", "2026-07-14"));
+    const a = await selectFootage([], "self", seed);
+    const b = await selectFootage([], "self", seed);
+    expect(a).toEqual(b);
   });
 });
 
