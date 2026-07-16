@@ -4,6 +4,7 @@ import { Lang, accountFor, getLang } from "@/lib/accounts";
 import { type Automation, checkBudget, logSpend, anthropicCost, EST_RUN_COST } from "@/lib/spend";
 import { parseContentJson } from "@/lib/content-json";
 import { dayUTC, reelSharedKey, hashStr, readReelShared, writeReelShared, selectFootage } from "@/lib/reel-shared";
+import { preflightClips } from "@/lib/footage-health";
 import { pickNewsTopic, copyLeaksName } from "@/lib/pauta-semana";
 import { readContentCache, writeContentCache } from "@/lib/content-cache";
 import { recordRun, recentTopicsAllLangs, runAlreadyPublished } from "@/lib/run-ledger";
@@ -490,10 +491,24 @@ export async function GET(req: NextRequest) {
 
     // Footage: reusa os clipes do cache (vídeo IDÊNTICO ES/PT) ou seleciona agora
     // com seed de (tópico,dia) — independente de conta. Só cacheia quando há clipes.
+    const footageSeed = hashStr(reelSharedKey(topic, day));
     let clips: string[] = shared?.clips ?? [];
+    const fromCache = clips.length > 0;
     if (!clips.length) {
-      clips = await selectFootage(videoQueries, cat, hashStr(reelSharedKey(topic, day)), 5, reelSharedKey(topic, day));
-      if (clips.length) await writeReelShared(topic, day, { research: searchResults, videoQueries, clips });
+      clips = await selectFootage(videoQueries, cat, footageSeed, 5, reelSharedKey(topic, day));
+    }
+    // PREFLIGHT DE SAÚDE (antes de cachear): um clipe da whitelist pode ter morrido
+    // no CDN (403 permanente) — e o Remotion MATA o render por causa de um só. Aqui
+    // o morto é trocado por outro VIVO do mesmo pilar da whitelist (nunca busca ao
+    // vivo, custo $0, fail-open). Vale também p/ o que veio do cache: se o cache foi
+    // envenenado antes, esta rodada o CURA e regrava — o 2º idioma já lê são.
+    const health = await preflightClips(clips, cat, footageSeed);
+    if (health.changed) {
+      console.log(`[footage] preflight: ${health.dead.length} morto(s), ${health.replaced} substituído(s), ${health.dropped} descartado(s) — ${health.dead.join(" ")}`);
+    }
+    clips = health.clips;
+    if (clips.length && (!fromCache || health.changed)) {
+      await writeReelShared(topic, day, { research: searchResults, videoQueries, clips });
     }
 
     // Número de edição: por VAGA (dia, run), o MESMO p/ ES e PT (mesmo conteúdo

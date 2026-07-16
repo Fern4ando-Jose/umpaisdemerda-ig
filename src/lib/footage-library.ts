@@ -119,7 +119,11 @@ export const FOOTAGE_LIBRARY: Record<string, FootageClip[]> = {
     { url: "https://videos.pexels.com/video-files/4547598/4547598-hd_720_1280_50fps.mp4", why: "silhueta caminhando para a luz de um portal" },
     { url: "https://videos.pexels.com/video-files/12155272/12155272-hd_720_1280_30fps.mp4", why: "porta em arco de pedra abrindo pro céu azul" },
     { url: "https://videos.pexels.com/video-files/18422162/18422162-hd_720_1280_60fps.mp4", why: "cavalo solitário galopando em contraluz dourada" },
-    { url: "https://videos.pexels.com/video-files/28759715/12469449_720_1280_30fps.mp4", why: "manada galopando levantando poeira" },
+    // (removido 28759715 "manada galopando levantando poeira" em 2026-07-16: o
+    //  Pexels tirou o arquivo do ar — CloudFront devolve 403 AccessDenied PERMANENTE
+    //  (sem query string de assinatura, não é expiração) e o Remotion abortava o
+    //  render → Reel do dia não saía. Varredura das 147 URLs: era a ÚNICA morta.
+    //  Não foi reposto: clipe novo exige curadoria/QA visual; `freedom` fica com 25.)
     { url: "https://videos.pexels.com/video-files/17662346/17662346-hd_720_1280_25fps.mp4", why: "gaivota planando em céu azul limpo" },
     { url: "https://videos.pexels.com/video-files/33349053/14199967_720_1280_30fps.mp4", why: "gaivotas voando sobre o mar em luz dourada" },
     { url: "https://videos.pexels.com/video-files/34793278/14751515_720_1280_60fps.mp4", why: "POV de estrada aberta (sinalização europeia)" },
