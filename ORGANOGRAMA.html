@@ -236,14 +236,17 @@
       <div class="step">6 · Hospedar o vídeo (só Reel)</div>
       <h3>Sobe o mp4 e pega a URL pública</h3>
       <p class="desc">A Graph API só publica Reel a partir de uma URL de vídeo acessível — o mp4 renderizado é
-        enviado para o armazenamento e devolve o link.</p>
+        enviado para o armazenamento e devolve o link. <b style="color:var(--warn, #c07d10)">MUDOU 2026-07-16:</b>
+        Vercel Blob suspendeu o store grátis da conta inteira (3 automações dividindo cota) → 100% dos Reels
+        falhavam. Trocado por GitHub Releases num repo <b>público dedicado</b> (este repo é privado, Releases
+        aqui não dariam URL pública).</p>
       <div class="infra">
-        <div class="lbl">Infra desta peça <span class="chip free">grátis (cota)</span></div>
+        <div class="lbl">Infra desta peça <span class="chip free">grátis</span></div>
         <dl class="grid">
-          <dt>Host</dt><dd class="name">Vercel Blob (storage)</dd>
-          <dt>Rota/comando</dt><dd>node scripts/upload-blob.mjs → devolve URL</dd>
-          <dt>Código</dt><dd class="name">scripts/upload-blob.mjs</dd>
-          <dt>Conta/serviço</dt><dd class="name">Vercel · env BLOB_READ_WRITE_TOKEN <span class="warn">⚠ Fase 2: projeto Vercel UPM</span></dd>
+          <dt>Host</dt><dd class="name">GitHub Releases — repo público <code>Fern4ando-Jose/umpaisdemerda-assets</code> (só binários, sem código)</dd>
+          <dt>Rota/comando</dt><dd>node scripts/upload-release.mjs → devolve URL pública estável</dd>
+          <dt>Código</dt><dd class="name">scripts/upload-release.mjs (espelha o bridge do dr-libertad-site, mira repo cruzado)</dd>
+          <dt>Conta/serviço</dt><dd class="name">GitHub · secret <code>ASSETS_REPO_TOKEN</code> (PAT com contents:write em umpaisdemerda-assets) — <span class="hl" style="color:var(--good,#12a97a)">✅ ligado e testado 2026-07-16</span></dd>
         </dl>
       </div>
     </div>
