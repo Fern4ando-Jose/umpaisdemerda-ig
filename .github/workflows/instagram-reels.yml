@@ -176,14 +176,16 @@ jobs:
         if: ${{ steps.media.outputs.has_media == '1' }}
         run: node scripts/render-reel.mjs --props=reel-props.json
 
-      # 7. Sobe o mp4 para o Vercel Blob e captura a URL pública (stdout)
-      - name: Upload do mp4 para o Vercel Blob
+      # 7. Sobe o mp4 para um GitHub Release público (repo de assets dedicado) e
+      #    captura a URL pública (stdout). Vercel Blob suspenso 2026-07-15 (conta
+      #    inteira estourou o teto grátis) — ver umpaisdemerda-assets.
+      - name: Upload do mp4 para GitHub Release (ponte)
         id: upload
         if: ${{ steps.media.outputs.has_media == '1' }}
         env:
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
         run: |
-          URL=$(node scripts/upload-blob.mjs)
+          URL=$(node scripts/upload-release.mjs)
           echo "URL do vídeo: $URL"
           echo "video_url=$URL" >> "$GITHUB_OUTPUT"
 

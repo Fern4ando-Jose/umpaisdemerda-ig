@@ -104,12 +104,12 @@ jobs:
       - name: Renderizar Reel clássico (Remotion)
         run: node scripts/render-reel.mjs --props=reel-props.json --composition=ReelClassic
 
-      - name: Upload do mp4 para o Vercel Blob
+      - name: Upload do mp4 para GitHub Release (ponte)
         id: upload
         env:
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          ASSETS_REPO_TOKEN: ${{ secrets.ASSETS_REPO_TOKEN }}
         run: |
-          URL=$(node scripts/upload-blob.mjs)
+          URL=$(node scripts/upload-release.mjs)
           echo "URL do vídeo: $URL"
           echo "video_url=$URL" >> "$GITHUB_OUTPUT"
 
