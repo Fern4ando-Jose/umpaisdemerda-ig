@@ -65,7 +65,7 @@
     <p class="kick">Organograma de automação · §1.19</p>
     <h1>@umpaisdemerda — pipeline de posts &amp; Reels</h1>
     <p class="sub">De onde sai · por onde passa · o que entrega — e onde cada peça mora</p>
-    <p class="meta">Automação de Instagram (sátira política libertária PT-BR) · máquina copiada do Dr. Libertad · atualizado 2026-07-05</p>
+    <p class="meta">Automação de Instagram (sátira política libertária PT-BR) · máquina copiada do Dr. Libertad · atualizado 2026-07-16</p>
   </div>
 
   <div class="status">
@@ -74,7 +74,9 @@
     <code>https://umpaisdemerda-ig.vercel.app</code> (Hobby/grátis); banco <b>Neon</b>
     <code>umpaisdemerda-db</code> conectado (<code>POSTGRES_URL</code>) e <code>/api/migrate</code> rodado
     (tabelas criadas); <b>Vercel Blob</b> <code>umpaisdemerda-blob</code> conectado; GitHub secrets
-    <code>SITE_URL/CRON_SECRET/ANTHROPIC_API_KEY/PEXELS_API_KEY</code> setados (2026-07-11). O <span class="on">miolo</span>
+    <code>SITE_URL/CRON_SECRET/ANTHROPIC_API_KEY/PEXELS_API_KEY</code> setados (2026-07-11 — a
+    <code>PEXELS_API_KEY</code> ficou <b>sem uso</b> desde que o footage virou whitelist curada, ver 5B).
+    O <span class="on">miolo</span>
     (marca, voz PT-BR, 29 temas, contas <code>*_UPM</code>, coletor de pauta) foi adaptado e o vínculo com o Dr.
     Libertad removido (workflows via <code>secrets.SITE_URL</code>). <b>Falta só</b>: o token da conta (Meta
     <code>META_*_UPM</code>) + o <code>BLOB_READ_WRITE_TOKEN</code> nos GitHub secrets → aí publica de verdade.
@@ -179,7 +181,8 @@
       <div class="step">4 · O texto — a voz da marca</div>
       <h3>Claude escreve a copy no tom @umpaisdemerda</h3>
       <p class="desc">O modelo gera um JSON: título-gancho, corpo, 3 insights (slides), CTA, legenda de IG e
-        <code>videoQueries</code> (termos de footage). O <b>marketBrief</b> PT-BR (voz crua, apartidária, o
+        <code>videoQueries</code> (termos de footage — hoje <b>vestigiais</b>: desde 2026-07-12 o footage sai da
+        whitelist curada por pilar e <code>selectFootage</code> ignora esses termos, ver 5B). O <b>marketBrief</b> PT-BR (voz crua, apartidária, o
         "espelho" do servo voluntário) é injetado no prompt. Copy fica em cache por (tema, dia) → redisparo
         não repaga.</p>
       <div class="infra">
@@ -215,15 +218,27 @@
       <!-- 5B · REEL -->
       <div class="node">
         <div class="step">5B · Reel (vídeo)</div>
-        <h3>Footage real + música + render</h3>
-        <p class="desc">Busca footage de banco no tema, garante fundo (footage → ilustração → pular; nunca Reel
-          preto), escolhe música por tema e renderiza o mp4 vertical.</p>
+        <h3>Footage curado + música + render</h3>
+        <p class="desc"><b style="color:var(--warn, #c07d10)">MUDOU 2026-07-12:</b> <b>não busca mais footage ao vivo</b> —
+          sorteia da <b>whitelist CURADA por pilar</b> (146 clipes vetados à mão em <code>src/lib/footage-library.ts</code>;
+          a roleta ao vivo trouxe marco dos EUA + cena imprópria e foi fechada no commit <code>6801ca0</code>).
+          Garante fundo (footage → ilustração → pular; nunca Reel preto), escolhe música por tema e renderiza o
+          mp4 vertical.</p>
+        <p class="desc"><b style="color:var(--warn, #c07d10)">MUDOU 2026-07-16:</b> um clipe que <b>morre no CDN</b>
+          (o Pexels tira o arquivo do ar → 403 permanente) abortava o render inteiro e o Reel do dia não saía.
+          Agora há <b>dupla rede</b>, custo <b>US$ 0</b> e sem reabrir busca ao vivo: <b>(1)</b> <code>preflightClips()</code>
+          na API sonda os clipes <b>antes</b> do <code>writeReelShared</code> e troca o morto por outro <b>vivo do mesmo
+          pilar</b> da whitelist (determinístico → ES e PT repõem o mesmo; cura o cache envenenado ao regravar);
+          <b>(2)</b> no CI, <code>fetch-footage.mjs</code> <b>poda</b> o que ainda chegar morto (cache antigo) — o Reel sai
+          com menos cenas (o pool cicla) em vez de não sair. Sonda = <code>GET Range 0-64</code> e é
+          <b>fail-open</b>: só 403/404/410 conta como morto; rede/timeout/429/5xx mantém o clipe.</p>
         <div class="infra">
           <div class="lbl">Infra <span class="chip free">grátis</span> <span class="chip paid">fal só fallback</span></div>
           <dl class="grid">
             <dt>Host</dt><dd class="name">GitHub Actions (Chromium + ffmpeg via Remotion)</dd>
-            <dt>Comando</dt><dd>fetch-footage.mjs → reel-media.cjs → render-reel.mjs</dd>
-            <dt>Serviço</dt><dd class="name">Pexels (footage, env PEXELS_API_KEY — grátis, herdada do DR) · fal.ai (ilustração de fallback, env FAL_KEY — <b class="warn">placeholder no cofre; só criar chave dedicada se for usar IA</b>) · música local (pick-music.cjs / generate-music.mjs)</dd>
+            <dt>Comando</dt><dd>fetch-footage.mjs (poda clipe morto via footage-probe.mjs) → reel-media.cjs (guarda anti-preto) → render-reel.mjs</dd>
+            <dt>Código</dt><dd class="name">src/lib/footage-library.ts (whitelist) · reel-shared.ts (selectFootage, <b>puro/sem rede</b>) · footage-health.ts (preflightClips) · scripts/footage-probe.mjs (sonda, fonte única da regra status→veredito)</dd>
+            <dt>Serviço</dt><dd class="name">Pexels + Pixabay <b>só como CDN</b> (URLs diretas da whitelist, <b>sem chave</b> — <code>PEXELS_API_KEY</code> não é usada no pipeline de produção, só nos scripts de curadoria/dev como <code>vet-footage-library.mjs</code>) · fal.ai (ilustração de fallback, env FAL_KEY — <b class="warn">placeholder no cofre; só criar chave dedicada se for usar IA</b>) · música local (pick-music.cjs / generate-music.mjs)</dd>
           </dl>
         </div>
       </div>
