@@ -492,7 +492,7 @@ export async function GET(req: NextRequest) {
     // com seed de (tópico,dia) — independente de conta. Só cacheia quando há clipes.
     let clips: string[] = shared?.clips ?? [];
     if (!clips.length) {
-      clips = await selectFootage(videoQueries, cat, hashStr(reelSharedKey(topic, day)));
+      clips = await selectFootage(videoQueries, cat, hashStr(reelSharedKey(topic, day)), 5, reelSharedKey(topic, day));
       if (clips.length) await writeReelShared(topic, day, { research: searchResults, videoQueries, clips });
     }
 

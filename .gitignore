@@ -60,6 +60,8 @@ DR-instagram-automation/
 # Material de apoio, notas e amostras de teste (não-produção)
 Material/
 Testes/
+# Mídia de teste guardada p/ reuso (higiene §1.11) — não versionar
+Arquivo-Midia/
 
 # Lixo de metadado do macOS (AppleDouble) — ex.: ._slot-monitor.mjs
 ._*

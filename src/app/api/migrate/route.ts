@@ -127,6 +127,26 @@ export async function GET(req: NextRequest) {
     results.push("reel_shared_cache table: " + String(e));
   }
 
+  // Tabela footage_qa_cache — veredito do juiz de visão (footage-qa.ts) por
+  // (fonte,mediaType,id do provedor) codificado num único BIGINT (qaCacheId em
+  // footage-providers.ts). Poster/foto é IMUTÁVEL → veredito vale pra sempre
+  // (evita re-julgar/re-pagar o mesmo candidato todo dia). NOVO 2026-07-16 — UPM
+  // nunca teve QA automático de footage (só vetagem manual); chega junto com o
+  // mix de 4 fontes (scripts/vet-footage-library.mjs).
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS footage_qa_cache (
+        video_id BIGINT PRIMARY KEY,
+        reject   BOOLEAN NOT NULL,
+        reason   TEXT,
+        ts       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    results.push("footage_qa_cache table: ok");
+  } catch (e) {
+    results.push("footage_qa_cache table: " + String(e));
+  }
+
   // Tabela published_runs — livro-razão (dia, run, idioma) de publicações. Dá
   // idempotência ao reel (dedup) e alimenta o watchdog (catchup.yml), que redispara
   // só os runs que faltaram no dia. Ver src/lib/run-ledger.ts.

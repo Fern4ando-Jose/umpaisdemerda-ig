@@ -97,6 +97,16 @@ describe("selectFootage é curado-only (nunca Pexels ao vivo)", () => {
     const b = await selectFootage([], "self", seed);
     expect(a).toEqual(b);
   });
+
+  // 2026-07-16: novo 5º parâmetro (excludeKey, anti-repetição cross-reel via
+  // recentClipUrls) é OPCIONAL e não muda o contrato — sem banco disponível (aqui
+  // em teste), fail-open devolve conjunto vazio, mesmo resultado de antes.
+  it("aceita o novo parâmetro excludeKey sem mudar o formato do retorno (fail-open sem DB)", async () => {
+    const seed = hashStr(reelSharedKey("Dopamina", "2026-07-14"));
+    const clips = await selectFootage([], "self", seed, 5, reelSharedKey("Dopamina", "2026-07-14"));
+    expect(clips).toHaveLength(5);
+    for (const url of clips) expect(curatedSet.has(url)).toBe(true);
+  });
 });
 
 describe("dayUTC", () => {

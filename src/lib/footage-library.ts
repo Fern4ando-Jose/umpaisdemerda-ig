@@ -6,7 +6,21 @@
 // casal seminu). O reel sorteia SÓ deste whitelist, sem repetir clipe no mesmo reel.
 // Mapa cat→pilar: self=O SERVO · network=A CASTA · anxiety=O ESTADO que rouba ·
 // freedom=LIBERDADE · dopamine=PÃO E CIRCO · mind=O DESPERTAR.
-export type FootageClip = { url: string; poster?: string; why?: string };
+//
+// 2026-07-16: acervo passa a poder MISTURAR 4 fontes — Pexels vídeo/foto (Ken
+// Burns) + Pixabay vídeo/foto (já tinha Pixabay vídeo curado à mão; agora
+// também via busca+QA automático). `mediaType`/`source` são só METADADOS
+// (relatório do QA em massa) — o RENDER decide foto×vídeo pela extensão da
+// própria URL (isPhotoUrl, src/lib/footage-media.ts), então entradas antigas
+// sem esses campos continuam funcionando sem migração.
+// scripts/vet-footage-library.mjs é quem AMPLIA esta lista.
+export type FootageClip = {
+  url: string;
+  poster?: string;
+  why?: string;
+  mediaType?: "video" | "photo";
+  source?: "pexels" | "pixabay";
+};
 
 export const FOOTAGE_LIBRARY: Record<string, FootageClip[]> = {
   // O SERVO — o rebanho que consente (rebanho, metrô lotado, escada rolante, operário exausto)
