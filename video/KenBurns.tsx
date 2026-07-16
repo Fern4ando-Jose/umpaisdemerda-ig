@@ -1,11 +1,13 @@
 // ─── Cena "FOTO Ken Burns" — 2ª fonte de footage ───────────────────────────────
 // Espelha video/KenBurns.tsx do DR-Libertad (irmão desta automação, PR aprovado
 // 2026-07-16) — mesmo mecanismo, mesma marca (duotone quente), adaptado à UPM
-// (sem variação de grade por pilar; acento continua vindo de CAT_ACCENT por
-// pilar, já existente). Transforma uma FOTO retrato 9:16 numa cena com movimento
-// cinematográfico LENTO e SUAVE via `transform: scale()/translate3d()`
-// interpolado por `useCurrentFrame()` — subpixel, GPU, sem o tremor do ffmpeg
-// zoompan (rejeitado no DR por arredondamento de pixel).
+// (sem variação de grade por pilar; acento de UI continua vindo de CAT_ACCENT
+// por pilar, já existente — mas NÃO chega até aqui: o wash do footage é LOCKED
+// dentro de `GradeOverlay`, ver video/brand-grade.ts). Transforma uma FOTO
+// retrato 9:16 numa cena com movimento cinematográfico LENTO e SUAVE via
+// `transform: scale()/translate3d()` interpolado por `useCurrentFrame()` —
+// subpixel, GPU, sem o tremor do ffmpeg zoompan (rejeitado no DR por
+// arredondamento de pixel).
 //
 // `SceneBg` (Reel.tsx) detecta se um clipe é foto ou vídeo por extensão de URL
 // (`isPhotoUrl`, src/lib/footage-media) e chama `<PhotoKenBurns>` no lugar de
@@ -53,12 +55,10 @@ export function PhotoKenBurns({
   src,
   mode,
   dur,
-  accent,
 }: {
   src: string;
   mode: KenBurnsMode;
   dur: number;
-  accent?: string;
 }) {
   const frame = useCurrentFrame();
   const { from, to } = moveFor(mode);
@@ -78,7 +78,7 @@ export function PhotoKenBurns({
       >
         <Img src={src} style={{ width: "100%", height: "100%", objectFit: "cover", filter: GRADE_FILTER }} />
       </AbsoluteFill>
-      <GradeOverlay accent={accent} />
+      <GradeOverlay />
     </AbsoluteFill>
   );
 }

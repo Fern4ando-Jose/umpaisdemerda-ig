@@ -12,6 +12,18 @@
 // própria) — só mata a duplicação, comportamento visual idêntico ao anterior.
 // Import RELATIVO nos consumidores de video/*.tsx (webpack do Remotion não
 // resolve `@/`).
+//
+// ─── WASH DO FOOTAGE — LOCKED, mono/quente (2026-07-16) ───────────────────────
+// O repo-irmão (dr-libertad-site) testou 6 matizes de wash variando por pilar
+// sobre footage real misturado de fontes heterogêneas (Pexels+Pixabay,
+// vídeo+foto) e o resultado ficou "doentio" (pele com tons errados) — decisão
+// travada lá: wash SEMPRE mono `#A45A5A`, nunca por pilar. Esta camada (antes
+// aceitava `accent` variável, e a UPM tinha o MESMO bug: `Reel.tsx` passava o
+// CAT_ACCENT do pilar direto pra cá) foi TRAVADA a seguir o mesmo padrão —
+// `GradeOverlay` não aceita mais nenhum parâmetro de cor: o wash do footage é
+// SEMPRE `FOOTAGE_WASH_ACCENT`, imune a qualquer chamador que tente variar por
+// pilar. Os elementos de UI PLANA (régua/CTA/palavra-destaque — CAT_ACCENT em
+// Reel.tsx) continuam variando nos 6 pilares; SÓ o wash do footage é fixo.
 import React from "react";
 import { AbsoluteFill } from "remotion";
 
@@ -19,18 +31,20 @@ export const GRADE_FILTER = "saturate(0.5) contrast(1.1) brightness(0.95) sepia(
 export const DUO_FLOOR = "#1F1A18"; // piso levemente quente (matte, sem laranja)
 export const DUO_HIGHLIGHT = "#ECDCC4"; // teto creme quente suave
 export const WARM_WASH = "#5A4636"; // unificador quente discreto
+export const FOOTAGE_WASH_ACCENT = "#A45A5A"; // wash do footage — LOCKED, nunca varia por pilar
 
 // Camadas de duotone (piso/teto/wash/acento) — usadas por CIMA do footage já
 // filtrado (vídeo com `filter: GRADE_FILTER` ou foto dentro de KenBurns). Um
 // ÚNICO componente para as 4 fontes: vídeo Pexels, vídeo Pixabay, foto Pexels ou
-// foto Pixabay saem com a MESMA cara.
-export function GradeOverlay({ accent }: { accent?: string }) {
+// foto Pixabay saem com a MESMA cara. SEM props: a cor do wash é fixa por
+// design — não há como um chamador (mesmo por engano) fazê-la variar por pilar.
+export function GradeOverlay() {
   return React.createElement(
     React.Fragment,
     null,
     React.createElement(AbsoluteFill, { style: { backgroundColor: DUO_FLOOR, mixBlendMode: "screen" } }),
     React.createElement(AbsoluteFill, { style: { backgroundColor: DUO_HIGHLIGHT, mixBlendMode: "multiply" } }),
     React.createElement(AbsoluteFill, { style: { backgroundColor: WARM_WASH, opacity: 0.16, mixBlendMode: "soft-light" } }),
-    accent ? React.createElement(AbsoluteFill, { style: { backgroundColor: accent, opacity: 0.18, mixBlendMode: "soft-light" } }) : null,
+    React.createElement(AbsoluteFill, { style: { backgroundColor: FOOTAGE_WASH_ACCENT, opacity: 0.18, mixBlendMode: "soft-light" } }),
   );
 }

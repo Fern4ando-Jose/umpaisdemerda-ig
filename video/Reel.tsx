@@ -2,12 +2,14 @@
 // Vídeo vertical 1080x1920 (9:16), 30fps. Régua: "vídeo de verdade, não slide
 // animado". O fundo é FOOTAGE REAL (vídeo filmado de banco / Pexels), um clipe
 // por cena (2-3 cenas distintas), com COLOR GRADE da marca por cima p/ unificar
-// (duotone ink/paper dessaturado + acento da categoria). O texto entra mínimo,
-// como camada. Footage = movimento real + custo zero.
+// (duotone ink/paper dessaturado + wash mono LOCKED `#A45A5A`, ver
+// video/brand-grade.ts — nunca varia por pilar, só a UI plana varia via
+// CAT_ACCENT). O texto entra mínimo, como camada. Footage = movimento real +
+// custo zero.
 //
 // Camadas por cena (de baixo p/ cima):
 //   1. Footage graded  → <OffthreadVideo> do clipe, cover-crop 9:16, push-in lento
-//      + filtro (dessatura/contraste) + wash do acento. Fallback: ilustração
+//      + filtro (dessatura/contraste) + wash mono LOCKED. Fallback: ilustração
 //      estática → watermark.
 //   2. Scrim           → contraste do texto.
 //   3. Grão + vinheta  → textura da marca.
@@ -40,7 +42,7 @@ const PAPER = "#F4F0E8";
 const WHITE = "#ffffff";
 const RED = "#A45A5A"; // acento default (freedom)
 
-const CAT_ACCENT: Record<string, string> = {
+export const CAT_ACCENT: Record<string, string> = {
   freedom: "#A45A5A",
   dopamine: "#BE7A2A",
   anxiety: "#3D6360",
@@ -58,7 +60,8 @@ const SCRIM =
 // redeclaradas só aqui; o clone (video/KenBurns.tsx, foto+Ken Burns) precisava
 // da MESMA grade pra ficar visualmente idêntico independente da fonte (Pexels
 // vídeo/foto + Pixabay vídeo/foto). DUO_FLOOR importado só pro backgroundColor
-// do wrapper; GradeOverlay aplica as camadas piso/teto/wash/acento.
+// do wrapper; GradeOverlay aplica as camadas piso/teto/wash — wash mono LOCKED
+// `#A45A5A`, sem parâmetro (2026-07-16), nunca por CAT_ACCENT do pilar.
 
 // ─── Zona segura do FEED do Instagram ─────────────────────────────────────────
 // O Reel é 1080×1920 (9:16), mas o FEED mostra um recorte CENTRADO 4:5 (1080×1350)
@@ -193,10 +196,11 @@ function SceneBg({
     // whitelist) — a URL entrega o tipo por extensão (isPhotoUrl, sem 5º campo no
     // schema). FOTO → Ken Burns (video/KenBurns.tsx); VÍDEO → OffthreadVideo.
     if (isPhotoUrl(clip)) {
-      return <PhotoKenBurns src={clip} mode={pickKenBurnsMode(hashStr(clip))} dur={dur} accent={accent} />;
+      return <PhotoKenBurns src={clip} mode={pickKenBurnsMode(hashStr(clip))} dur={dur} />;
     }
     // isolation: isolate → os mix-blend abaixo se combinam SÓ entre si (duotone
-    // fechado), sem vazar pro resto da cena.
+    // fechado), sem vazar pro resto da cena. O wash (GradeOverlay) é LOCKED
+    // mono/quente — não recebe `accent` do pilar (ver video/brand-grade.ts).
     return (
       <AbsoluteFill style={{ backgroundColor: DUO_FLOOR, overflow: "hidden", isolation: "isolate" }}>
         <AbsoluteFill style={{ transform: `scale(${zoom}) translateX(${driftX}px)` }}>
@@ -206,7 +210,7 @@ function SceneBg({
             style={{ width: "100%", height: "100%", objectFit: "cover", filter: GRADE_FILTER }}
           />
         </AbsoluteFill>
-        <GradeOverlay accent={accent} />
+        <GradeOverlay />
       </AbsoluteFill>
     );
   }
