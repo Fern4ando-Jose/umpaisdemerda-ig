@@ -13,7 +13,9 @@
 import { FOOTAGE_LIBRARY, beatPillars } from "./footage-library";
 
 // Sorteio determinístico por seed (LCG) — mesmo (tópico,dia) → mesmos clipes ES/PT.
-function seededShuffle<T>(arr: T[], seed: number): T[] {
+// Exportado p/ o preflight de saúde (footage-health.ts) sortear o SUBSTITUTO de um
+// clipe morto com a mesma regra determinística — ES e PT repõem o mesmo clipe.
+export function seededShuffle<T>(arr: T[], seed: number): T[] {
   const a = arr.slice();
   let s = seed >>> 0 || 1;
   for (let i = a.length - 1; i > 0; i--) {
