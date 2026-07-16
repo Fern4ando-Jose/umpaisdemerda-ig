@@ -147,29 +147,65 @@ export async function writeReelSharedClips(input: ShareClipsInput): Promise<void
   } catch { /* best-effort — nunca quebra o pipeline do CI */ }
 }
 
+// ─── Anti-repetição CROSS-REEL (14 dias) — NOVO 2026-07-16 ─────────────────────
+// URLs de footage usadas em Reels recentes, lidas da própria reel_shared_cache
+// (mesma tabela que já guarda o footage compartilhado ES↔PT — sem tabela nova).
+// Antes a UPM só evitava repetir DENTRO do mesmo reel (`used`); com o acervo
+// ainda pequeno, o mesmo clipe podia voltar todo dia. Espelha a correção
+// equivalente do DR-Libertad (recentClipIds→recentClipUrls, mas aqui nasce
+// direto por URL — não existe versão antiga por ID a migrar). Fail-open: erro de
+// banco → conjunto vazio (comportamento anterior, sem regressão).
+async function recentClipUrls(excludeKey?: string): Promise<Set<string>> {
+  try {
+    const { sql } = await import("@vercel/postgres");
+    const rows = await sql<{ cache_key: string; clips: unknown }>`
+      SELECT cache_key, clips FROM reel_shared_cache WHERE created_at > now() - interval '14 days'`;
+    const urls = new Set<string>();
+    for (const r of rows.rows) {
+      if (excludeKey && r.cache_key === excludeKey) continue;
+      const arr = Array.isArray(r.clips) ? (r.clips as string[]) : [];
+      for (const u of arr) urls.add(String(u));
+    }
+    return urls;
+  } catch {
+    return new Set<string>();
+  }
+}
+
 // ─── Seleção de footage (biblioteca CURADA, custo zero, 100% vetado) ──────────
-// Footage vem SEMPRE do whitelist FOOTAGE_LIBRARY (clipes vetados à mão). NÃO há
-// busca ao vivo no Pexels: aquela roleta não-vetada já trouxe marco dos EUA e cena
-// imprópria. O seed de diversificação vem de (tópico, dia), NÃO do @handle/edição
-// → ES e PT do mesmo run escolhem o MESMO clipe; a diversidade entre DIAS/tópicos
-// é mantida.
+// Footage vem SEMPRE do whitelist FOOTAGE_LIBRARY (clipes vetados pelo QA
+// automático + à mão). NÃO há busca ao vivo no Pexels/Pixabay: aquela roleta
+// não-vetada já trouxe marco dos EUA e cena imprópria — o caminho permanece
+// FECHADO (2026-07-16: o mix de 4 fontes amplia a WHITELIST via
+// scripts/vet-footage-library.mjs, curadoria em lote com QA antes de entrar;
+// nunca busca ao vivo dentro do selectFootage). O seed de diversificação vem de
+// (tópico, dia), NÃO do @handle/edição → ES e PT do mesmo run escolhem o MESMO
+// clipe; a diversidade entre DIAS/tópicos é mantida.
+//
+// 2026-07-16: a whitelist agora pode MISTURAR Pexels vídeo/foto + Pixabay
+// vídeo/foto (metadado `source`/`mediaType` em cada entrada — o shuffle já
+// embaralha as 4 fontes entre si) e o sorteio evita repetir URL usada em Reels
+// recentes (cross-fonte, `recentClipUrls`), não só dentro do mesmo reel.
 
 // Seleciona numClips URLs de footage curado, 1 por cena seguindo o ARCO
-// (gancho→…→contraste da casta→virada), sem repetir clipe no mesmo reel,
-// determinístico por (tópico,dia). `videoQueries` não é mais usado na seleção
-// (mantido na assinatura para compatibilidade com os chamadores). Só devolve []
-// se a biblioteca inteira estiver vazia → o Reel cai no fallback SEGURO de última
-// instância (ilustração estática). NUNCA busca Pexels ao vivo.
+// (gancho→…→contraste da casta→virada), sem repetir clipe no mesmo reel nem em
+// Reels recentes (14d), determinístico por (tópico,dia). `videoQueries` não é
+// mais usado na seleção (mantido na assinatura para compatibilidade com os
+// chamadores). Só devolve [] se a biblioteca inteira estiver vazia → o Reel cai
+// no fallback SEGURO de última instância (ilustração estática). NUNCA busca
+// Pexels/Pixabay ao vivo.
 export async function selectFootage(
   _videoQueries: string[],
   cat: string,
   seed: number,
   numClips = 5, // 5 cenas do Reel (capa + 3 insights + CTA) → 5 clipes distintos
+  excludeKey?: string, // cache_key do PRÓPRIO (tópico,dia) — fora do "avoid" (espelha #126 do DR)
 ): Promise<string[]> {
   const arc = beatPillars(cat, numClips);
   // Rede de segurança: se um pilar do arco vier vazio (cat desconhecido), sorteia
   // da UNIÃO de todos os clipes curados — ainda 100% vetado, jamais Pexels cru.
   const allCurated = Object.values(FOOTAGE_LIBRARY).flatMap((l) => l.map((c) => c.url));
+  const avoid = await recentClipUrls(excludeKey);
   const used = new Set<string>();
   const picked: string[] = [];
   for (let i = 0; i < numClips; i++) {
@@ -179,7 +215,11 @@ export async function selectFootage(
       : allCurated;
     if (!pool.length) continue;
     const urls = seededShuffle(pool, seed + i * 97);
-    const url = urls.find((u) => !used.has(u)) ?? urls[0];
+    // 1ª tentativa: nem usado neste reel, nem usado em Reels recentes (14d).
+    let url = urls.find((u) => !used.has(u) && !avoid.has(u));
+    // Relaxa (só o recente, não a whitelist inteira): sem opção fresca, aceita
+    // repetir um clipe recente antes de deixar a cena sem footage.
+    if (!url) url = urls.find((u) => !used.has(u)) ?? urls[0];
     if (url) { used.add(url); picked.push(url); }
   }
   return picked;

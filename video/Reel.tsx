@@ -28,6 +28,9 @@ import {
   useVideoConfig,
 } from "remotion";
 import { loadFont as loadFraunces } from "@remotion/google-fonts/Fraunces";
+import { GradeOverlay, GRADE_FILTER, DUO_FLOOR } from "./brand-grade";
+import { PhotoKenBurns, pickKenBurnsMode } from "./KenBurns";
+import { isPhotoUrl, hashStr } from "../src/lib/footage-media";
 
 const { fontFamily: FRAUNCES } = loadFraunces();
 
@@ -51,20 +54,11 @@ const SCRIM =
   "linear-gradient(180deg, rgba(11,11,12,0.58) 0%, rgba(11,11,12,0.20) 30%, rgba(11,11,12,0.22) 58%, rgba(11,11,12,0.90) 100%)";
 
 // ─── Grade cinematográfica QUENTE/VINTAGE (padrão de marca em todo footage) ───
-// Restaura e UNIFICA a cara editorial/cine que o footage bom já tinha — tons
-// antigos, quentes, puxando pro âmbar/vermelho, matte e profundos. (A 1ª versão
-// em grayscale+creme clareou demais e matou a cor — revertida.) Normaliza
-// qualquer clipe do Pexels na MESMA faixa tonal quente:
-//   1. vídeo → cor PARCIAL + sépia (calor garantido) + escuro (mood);
-//   2. screen(PISO quente) → pretos viram marrom profundo (matte vintage; nunca
-//      cinza lavado, nunca preto puro);
-//   3. multiply(LUZ âmbar) → luzes viram dourado quente (sem estourar);
-//   4. soft-light(WASH quente) → base sempre quente, coesa mesmo em clipe frio;
-//   5. soft-light(acento) → cor da categoria por cima.
-const GRADE_FILTER = "saturate(0.5) contrast(1.1) brightness(0.95) sepia(0.2)";
-const DUO_FLOOR = "#1F1A18";      // piso levemente quente (marrom-neutro — matte, sem laranja)
-const DUO_HIGHLIGHT = "#ECDCC4";  // teto creme quente suave (entre creme e âmbar)
-const WARM_WASH = "#5A4636";      // unificador quente discreto (marrom-neutro, não vermelho)
+// FONTE ÚNICA em `./brand-grade` (2026-07-16) — antes as 4 constantes eram
+// redeclaradas só aqui; o clone (video/KenBurns.tsx, foto+Ken Burns) precisava
+// da MESMA grade pra ficar visualmente idêntico independente da fonte (Pexels
+// vídeo/foto + Pixabay vídeo/foto). DUO_FLOOR importado só pro backgroundColor
+// do wrapper; GradeOverlay aplica as camadas piso/teto/wash/acento.
 
 // ─── Zona segura do FEED do Instagram ─────────────────────────────────────────
 // O Reel é 1080×1920 (9:16), mas o FEED mostra um recorte CENTRADO 4:5 (1080×1350)
@@ -195,9 +189,14 @@ function SceneBg({
   const driftX = interpolate(frame, [0, dur], [0, -28], { extrapolateRight: "clamp" });
 
   if (clip) {
+    // 4 fontes de footage (Pexels vídeo/foto + Pixabay vídeo/foto, misturadas na
+    // whitelist) — a URL entrega o tipo por extensão (isPhotoUrl, sem 5º campo no
+    // schema). FOTO → Ken Burns (video/KenBurns.tsx); VÍDEO → OffthreadVideo.
+    if (isPhotoUrl(clip)) {
+      return <PhotoKenBurns src={clip} mode={pickKenBurnsMode(hashStr(clip))} dur={dur} accent={accent} />;
+    }
     // isolation: isolate → os mix-blend abaixo se combinam SÓ entre si (duotone
-    // fechado), sem vazar pro resto da cena. Ordem importa: grayscale → screen
-    // (piso) → multiply (teto) → soft-light (acento).
+    // fechado), sem vazar pro resto da cena.
     return (
       <AbsoluteFill style={{ backgroundColor: DUO_FLOOR, overflow: "hidden", isolation: "isolate" }}>
         <AbsoluteFill style={{ transform: `scale(${zoom}) translateX(${driftX}px)` }}>
@@ -207,16 +206,7 @@ function SceneBg({
             style={{ width: "100%", height: "100%", objectFit: "cover", filter: GRADE_FILTER }}
           />
         </AbsoluteFill>
-        {/* PISO quente: screen com marrom escuro — pretos viram matte vintage
-            (clipe escuro deixa de virar preto; sombras coesas e QUENTES, não cinza) */}
-        <AbsoluteFill style={{ backgroundColor: DUO_FLOOR, mixBlendMode: "screen" }} />
-        {/* TETO âmbar: multiply — luzes viram dourado quente (clipe claro não estoura;
-            luzes coesas) → exposição igual clipe a clipe, com calor de filme antigo */}
-        <AbsoluteFill style={{ backgroundColor: DUO_HIGHLIGHT, mixBlendMode: "multiply" }} />
-        {/* WASH quente global — garante o tom 'antigo/quente' mesmo em clipe frio */}
-        <AbsoluteFill style={{ backgroundColor: WARM_WASH, opacity: 0.16, mixBlendMode: "soft-light" }} />
-        {/* ACENTO da categoria por cima — cor de marca */}
-        <AbsoluteFill style={{ backgroundColor: accent, opacity: 0.18, mixBlendMode: "soft-light" }} />
+        <GradeOverlay accent={accent} />
       </AbsoluteFill>
     );
   }
