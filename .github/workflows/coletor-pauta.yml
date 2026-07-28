@@ -1,13 +1,18 @@
-name: Coletor de pauta (semanal)
+name: Coletor de pauta (diário)
 
-# Puxa as manchetes da semana (Google News RSS, grátis, sem chave) nas 4 frentes
-# e marca 🆕 o que é inédito. Dedup VERSIONADO: o histórico de hashes vive em
-# data/pauta-seen.json e é commitado de volta a cada rodada → a curadoria semanal
-# foca só no que é novo. NÃO publica nada; é insumo de pauta para o dono decidir.
+# Puxa as manchetes (Google News RSS, grátis, sem chave) nas 4 frentes e marca 🆕 o
+# que é inédito. Dedup VERSIONADO: o histórico de hashes vive em data/pauta-seen.json
+# e é commitado de volta a cada rodada → a pauta do dia só traz o que é novo.
+# NÃO publica nada; é o insumo que os posts do dia usam como GATILHO do padrão.
+#
+# DIÁRIO desde 27/07/2026 (ordem do dono: "cada dia tem coisa diferente"). Antes era
+# semanal, e por isso a conta repetia assunto. Dia sem novidade não zera nada: o
+# coletor só reescreve data/pauta-semana.json quando há manchete nova.
+# Escopo: TRABALHO.md, bloco `pauta:`.
 
 on:
   schedule:
-    - cron: "0 12 * * 1" # toda segunda 12:00 UTC (09:00 BRT)
+    - cron: "0 9 * * *" # todo dia 09:00 UTC (06:00 BRT) — antes dos posts das 09:17
   workflow_dispatch: {}
 
 permissions:
@@ -40,14 +45,20 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Commitar dedup atualizado (se mudou)
+      # BUG CORRIGIDO 27/07/2026: este passo commitava SÓ o dedup (pauta-seen.json).
+      # A pauta em si (pauta-semana.json) — o arquivo que o app LÊ para escrever o
+      # post — era gerada aqui e JOGADA FORA. Resultado: a pauta ficou congelada em
+      # 12/07 enquanto o dedup avançava, ou seja, as manchetes novas eram marcadas
+      # como "já vistas" e NUNCA chegavam ao post. Era a causa de "só repete o mesmo
+      # assunto". Agora os DOIS arquivos voltam para o repositório.
+      - name: Commitar pauta e dedup atualizados (se mudaram)
         run: |
-          if [[ -n "$(git status --porcelain data/pauta-seen.json)" ]]; then
+          if [[ -n "$(git status --porcelain data/pauta-seen.json data/pauta-semana.json)" ]]; then
             git config user.name  "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add data/pauta-seen.json
-            git commit -m "chore(pauta): atualiza dedup do coletor [skip ci]"
+            git add data/pauta-seen.json data/pauta-semana.json
+            git commit -m "chore(pauta): atualiza pauta do dia e dedup [skip ci]"
             git push
           else
-            echo "sem novidades no dedup — nada a commitar"
+            echo "sem novidades — nada a commitar"
           fi

@@ -30,6 +30,17 @@ export function pickNewsTopic(seed: number): { headline: string; cat: string } |
   return flat[Math.abs(seed) % flat.length];
 }
 
+// QUANTOS posts do dia nascem do noticiário — regra do dono (27/07/2026):
+// "a crítica deve ser sobre o escândalo do governo, que cada dia tem coisa diferente".
+// Escopo em TRABALHO.md (bloco `pauta:`): 3 das 4 publicações do dia puxam manchete;
+// a 1ª (slot "manha") fica ATEMPORAL — é a espinha do livro (servidão voluntária), e
+// sem ela a conta vira jornal e morre quando a notícia esfria.
+// Os 4 runs diários: 0 = reel 12:17 (manha) · 1 = reel 17:17 (tarde) ·
+//                    4 = post 09:17 (tarde) · 5 = post 14:17 (noite)  → 3 com pauta.
+export function usaPautaNoSlot(slot: string): boolean {
+  return slot !== "manha";
+}
+
 // GUARDA anti-vazamento: rejeita a copy se parecer que citou nome/partido/figura da
 // notícia (a régua já proíbe, mas isto é o backstop de código — como o literal-lock).
 // Erra para o lado de REJEITAR: um falso-positivo só faz o run cair num tema fixo.

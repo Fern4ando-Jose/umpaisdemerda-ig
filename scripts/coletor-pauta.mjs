@@ -26,12 +26,20 @@ const SEEN_CAP = 1000; // mantém os N hashes mais recentes (evita crescimento s
 const PAUTA_SEMANA_PATH = resolve(__dirname, "..", "data", "pauta-semana.json");
 const PAUTA_POR_FRENTE = 5; // guarda até N manchetes novas por frente
 
+// AS 4 FRENTES — cada busca junta o ÓRGÃO com a palavra de ESCÂNDALO. Antes as
+// buscas pediam só o órgão e voltavam com burocracia ("Fundaj abre inscrições",
+// "sessão deliberativa ordinária"), que não vira crítica nenhuma (ordem do dono
+// 27/07/2026: a crítica é sobre o ESCÂNDALO do governo, que muda todo dia).
 const FRENTES = [
-  { id: "Executivo",  q: '(governo federal OR Planalto OR presidência OR ministério OR "gasto público") when:7d' },
-  { id: "Legislativo", q: '(Congresso OR Câmara dos Deputados OR Senado OR "emenda parlamentar" OR "aumento salarial" deputado OR senador) when:7d' },
-  { id: "Judiciário",  q: '(STF OR "Supremo Tribunal" OR judiciário OR "auxílio" magistrado OR "penduricalho") when:7d' },
-  { id: "Crime/Narco", q: '(crime organizado OR facção OR narcotráfico OR milícia OR "lavagem de dinheiro") Brasil when:7d' },
+  { id: "Executivo",  q: '(governo federal OR Planalto OR ministério OR "gasto público") (corrupção OR desvio OR fraude OR superfaturamento OR escândalo OR "dinheiro público" OR mordomia) when:7d' },
+  { id: "Legislativo", q: '(Congresso OR "Câmara dos Deputados" OR Senado OR deputado OR senador) (emenda OR "orçamento secreto" OR privilégio OR penduricalho OR aumento OR escândalo OR desvio) when:7d' },
+  { id: "Judiciário",  q: '(STF OR "Supremo Tribunal" OR judiciário OR magistrado OR desembargador) (penduricalho OR supersalário OR auxílio OR privilégio OR escândalo OR benesse) when:7d' },
+  { id: "Crime/Narco", q: '(crime organizado OR facção OR narcotráfico OR milícia OR "lavagem de dinheiro") (operação OR investigação OR político OR prefeitura OR ligação) Brasil when:7d' },
 ];
+
+// RUÍDO — manchete de agenda/burocracia não é escândalo e não vira post. Descarta
+// antes de entrar na pauta (o filtro é conservador: só corta o que é claramente aviso).
+const RUIDO = /(inscri[çc][õo]es|edital|concurso p[úu]blico|sess[ãa]o deliberativa|ordem do dia|pauta da semana|agenda d[oa]|curso|p[óo]s-gradua[çc][ãa]o|semin[áa]rio|webin[áa]r|homenagem|posse d[eo]|efem[ée]ride|nota de pesar)/i;
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) UmPaisDeMerdaBot/1.0";
 const args = process.argv.slice(2);
@@ -114,7 +122,15 @@ const pautaFrentes = {}; // { frente: [titulos NOVOS] } → data/pauta-semana.js
 for (const f of out) {
   console.log(`\n========== ${f.id} ==========`);
   if (f.erro) { console.log(`  (erro: ${f.erro})`); continue; }
-  const lista = ONLY_NEW ? f.items.filter((it) => !seen.has(it.h)) : f.items;
+  // corta agenda/burocracia ANTES de tudo — não é escândalo, não vira post
+  const semRuido = f.items.filter((it) =>
+    !RUIDO.test(it.titulo) &&
+    it.titulo.length <= 160 &&                    // post de rede social copiado inteiro
+    !/instagram\.com|facebook\.com|twitter\.com|x\.com/i.test(it.fonte || "")
+  );
+  const cortados = f.items.length - semRuido.length;
+  if (cortados) console.log(`  (${cortados} manchete(s) de agenda/burocracia descartada(s))`);
+  const lista = ONLY_NEW ? semRuido.filter((it) => !seen.has(it.h)) : semRuido;
   if (!lista.length) { console.log(ONLY_NEW ? "  (nada novo)" : "  (sem resultados)"); continue; }
   lista.forEach((it, i) => {
     const isNew = !seen.has(it.h);

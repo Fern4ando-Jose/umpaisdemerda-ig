@@ -5,7 +5,7 @@ import { type Automation, checkBudget, logSpend, anthropicCost, EST_RUN_COST } f
 import { parseContentJson } from "@/lib/content-json";
 import { dayUTC, reelSharedKey, hashStr, readReelShared, writeReelShared, selectFootage } from "@/lib/reel-shared";
 import { preflightClips } from "@/lib/footage-health";
-import { pickNewsTopic, copyLeaksName } from "@/lib/pauta-semana";
+import { pickNewsTopic, copyLeaksName, usaPautaNoSlot } from "@/lib/pauta-semana";
 import { readContentCache, writeContentCache } from "@/lib/content-cache";
 import { recordRun, recentTopicsAllLangs, runAlreadyPublished } from "@/lib/run-ledger";
 import { buildRotation, topicIndexForRun, slotForRun, pickFreshTopicIndex } from "@/lib/rotation";
@@ -479,7 +479,17 @@ export async function GET(req: NextRequest) {
     // Copy: reusa o cache por (tópico, dia, idioma) → redisparo NÃO repaga a Anthropic.
     let content = (await readContentCache(topic, day, lang)) as GeneratedContent | null;
     if (!content) {
-      content = await generateContent(topic, searchResults, slot, lang, "ig-reels");
+      // PAUTA QUENTE no REEL — mesma regra dos carrosséis (TRABALHO.md, bloco `pauta:`):
+      // 3 das 4 publicações do dia nascem de uma manchete real usada como GATILHO do
+      // padrão; a 1ª do dia (slot "manha") fica atemporal. Sem pauta no arquivo,
+      // pickNewsTopic devolve null e o run cai no tema fixo (fail-open).
+      const news = usaPautaNoSlot(slot) ? pickNewsTopic(hashStr(`${day}|${r}`)) : null;
+      content = await generateContent(topic, searchResults, slot, lang, "ig-reels", news?.headline);
+      // GUARDA anti-vazamento (backstop de código da régua apartidária): se a copy
+      // citou nome/sigla/cargo/instituição, REFAZ sem a notícia.
+      if (news && copyLeaksName([content.postTitle, ...(content.slides || []), content.cta, content.instagramCaption])) {
+        content = await generateContent(topic, searchResults, slot, lang, "ig-reels");
+      }
       await writeContentCache(topic, day, lang, content);
     }
 
@@ -622,7 +632,7 @@ export async function GET(req: NextRequest) {
           const searchResults = await searchTopic(topic, "ig-posts");
           // 2ª FRENTE (corrupção da semana): no slot "noite", puxa uma manchete real
           // como GATILHO do padrão (apartidário; a régua + a guarda abaixo protegem).
-          const news = slot === "noite" ? pickNewsTopic(hashStr(`${dayUTC(now)}|${runIndex}`)) : null;
+          const news = usaPautaNoSlot(slot) ? pickNewsTopic(hashStr(`${dayUTC(now)}|${runIndex}`)) : null;
           content = await generateContent(topic, searchResults, slot, lang, "ig-posts", news?.headline);
           // GUARDA anti-vazamento: se a copy citou nome/partido/instituição/sigla,
           // REFAZ sem a notícia (tema fixo puro). Backstop de código da régua.

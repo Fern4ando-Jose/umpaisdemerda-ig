@@ -1,15 +1,33 @@
 {
-  "atualizado": "2026-07-12T02:24:26.881Z",
+  "atualizado": "2026-07-28T02:05:07.923Z",
   "frentes": {
     "Executivo": [
-      "Fundaj abre inscrições para pós-graduação lato sensu — Ministério da Educação",
-      "Edital seleciona projetos de extensão na Rede Federal — Ministério da Educação"
+      "Governo libera R$ 547 milhões para ressarcir vítimas de fraude do INSS",
+      "PF deflagra operação contra desvio de bens da Receita Federal — Polícia Federal",
+      "Créditos de reciclagem de vidro têm indícios de fraude, diz denúncia de associação ao Ministério Público",
+      "Programa de Bolsonaro entregou redes de vôlei para escolas sem quadras",
+      "PF mira desvios de R$ 45 milhões de clientes da Caixa"
     ],
     "Legislativo": [
-      "Sessão deliberativa ordinária – 9/7/26"
+      "Câmara dos Deputados envia ao STF informações sobre tramitação de emendas de comissões",
+      "Comissão de Segurança aprova aumento de penas para diversos crimes",
+      "Congresso desmontou o Orçamento com emendas, poder e opacidade - 22/07/2026 - Opinião",
+      "Emendas parlamentares de comissão revivem orçamento secreto; entenda",
+      "Em resposta ao STF, Câmara nega irregularidades em indicações de emendas"
+    ],
+    "Judiciário": [
+      "Julgamento no STF pode acabar com o auxílio aos atingidos pelo rompimento da barragem de Brumadinho",
+      "IBRAM reforça pedido ao STF para suspender decisões sobre o Novo Auxílio Emergencial",
+      "Atingidos vão às ruas contra tentativa da Vale de influenciar o Judiciário e retirar direitos - MAB",
+      "Ibram faz quarto pedido de urgência ao STF para suspender pagamento de auxílio da Vale em Brumadinho",
+      "Trabalho: justiça gratuita não pode ser considerada um privilégio"
     ],
     "Crime/Narco": [
-      "Operação integrada mira acusados de tráfico e lavagem de dinheiro em 16 estados"
+      "PF mira crime organizado em operação conjunta com o Paraguai",
+      "‘Drones do crime’ se multiplicam no RJ; polícia tem setor exclusivo para combater ataques de equipamentos de facções",
+      "Operação mira 18 pessoas por operação financeira do PCC e “tribunais do crime”",
+      "O Estado está mais lento que o crime",
+      "Operação mira grupo de financiamento do PCC e \"tribunais do crime\" em SP"
     ]
   }
 }
