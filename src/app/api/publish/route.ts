@@ -571,8 +571,14 @@ export async function GET(req: NextRequest) {
       spokenSlides.pop();
     }
     // Blocos do roteiro NA ORDEM falada — o render usa esta MESMA lista pra saber
-    // onde cada cena começa (fonte única do alinhamento voz↔tela). Sem fecho falado.
-    const narrationSegments = [content.postTitle, ...spokenSlides]
+    // onde cada cena começa (fonte única do alinhamento voz↔tela).
+    // FECHO FALADO (ordem do dono 29/07, depois de ouvir o reel das 19:47: "deveríamos
+    // incluir o finalzinho"): a voz fecha com a pergunta do dia + "Siga o perfil." —
+    // o MESMO pedido que o card final mostra (voz = tela; um pedido só). Sem falar o
+    // @handle (era o que embolava a voz no DR). A cena final começa quando a voz
+    // começa o fecho — mesma mecânica das outras cenas, nada é espremido.
+    const fechoFalado = [content.cta, "Siga o perfil."].map((s) => String(s || "").trim()).filter(Boolean).join(" ");
+    const narrationSegments = [content.postTitle, ...spokenSlides, fechoFalado]
       .map((s) => String(s).trim()).filter(Boolean)
       .map((s) => (/[.!?]$/.test(s) ? s : s + "."));
     const narrationText = narrationSegments.join(" ");

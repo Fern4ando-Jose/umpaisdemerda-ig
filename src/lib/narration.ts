@@ -61,7 +61,7 @@ export interface NarrationResult {
 // VERSÃO DO ROTEIRO no fim da chave: quando a FORMA do roteiro muda, o áudio
 // guardado da forma antiga NÃO pode ser reaproveitado (dessincroniza). Mudou a
 // forma do roteiro? Suba o número — o cache velho simplesmente nunca casa.
-const ROTEIRO_VERSAO = "v1"; // v1 = título + insights, sem fecho falado (como o DR v2)
+const ROTEIRO_VERSAO = "v2"; // v2 = título + insights + FECHO falado (cta + "Siga o perfil.", 29/07)
 
 // HASH do TEXTO falado na chave (29/07/2026): a voz só pode ser reusada para o
 // MESMO roteiro. Foi o bug do 1º reel narrado: a copy mudou entre chamadas (a

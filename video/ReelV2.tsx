@@ -91,9 +91,10 @@ export function reelPlanV2(props: Partial<ReelProps>, fps: number = FPS): ReelV2
 
   const segments = Array.isArray(props.narrationSegments) ? props.narrationSegments.filter(Boolean) : [];
   const durationSec = Number(props.narrationDurationSec ?? 0);
-  // A voz fala título + n insights = n+1 blocos (sem fecho falado — a régua do DR
-  // desde 29/07: "Direct"/CTA com sotaque saiu da voz). Divergência real → fórmula.
-  if (!props.narrationUrl || !(durationSec > 0) || segments.length !== n + 1) return fallback();
+  // A voz fala título + n insights + FECHO = n+2 blocos (fecho falado incluído em
+  // 29/07 por ordem do dono, depois de ouvir o reel das 19:47: a cena final começa
+  // quando a voz começa o fecho — mesma mecânica das outras). Divergência → fórmula.
+  if (!props.narrationUrl || !(durationSec > 0) || segments.length !== n + 2) return fallback();
 
   const scriptWords = segments.flatMap(splitWords);
   if (!scriptWords.length) return fallback();
@@ -103,13 +104,18 @@ export function reelPlanV2(props: Partial<ReelProps>, fps: number = FPS): ReelV2
     Array.isArray(props.narrationWords) ? props.narrationWords : [],
     durationSec,
   );
-  // A voz cobre capa + insights; o CTA entra DEPOIS dela, com duração fixa.
+  // A voz cobre TODAS as cenas, fecho incluso. A ÚLTIMA cena (CTA falado) ganha um
+  // respiro extra de leitura DEPOIS de a voz acabar — esticar a última cena não
+  // empurra ninguém (não há cena depois dela), então o invariante do relógio fica.
   const plan = buildSyncPlan(segments, words, durationSec, fps, 0);
   const timings = segmentTimings(segments, words);
   const scenes = [...plan.scenes];
-  let totalFrames = plan.totalFrames;
-  scenes.push({ fromFrame: totalFrames, durationInFrames: CTA });
-  totalFrames += CTA;
+  const HOLD = Math.round(fps * 2.0); // card final legível após o fim da fala
+  scenes[scenes.length - 1] = {
+    ...scenes[scenes.length - 1],
+    durationInFrames: scenes[scenes.length - 1].durationInFrames + HOLD,
+  };
+  let totalFrames = plan.totalFrames + HOLD;
 
   // Frames de cada palavra, RELATIVOS ao início da sua cena. Só aplica quando a
   // contagem de palavras da tela bate com a falada — senão a cena usa o ritmo fixo.
