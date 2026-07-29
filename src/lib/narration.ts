@@ -63,18 +63,29 @@ export interface NarrationResult {
 // forma do roteiro? Suba o número — o cache velho simplesmente nunca casa.
 const ROTEIRO_VERSAO = "v1"; // v1 = título + insights, sem fecho falado (como o DR v2)
 
-function cacheKey(topic: string, day: string, lang: string): string {
-  return `${topic}|${day}|${lang}|${ROTEIRO_VERSAO}`;
+// HASH do TEXTO falado na chave (29/07/2026): a voz só pode ser reusada para o
+// MESMO roteiro. Foi o bug do 1º reel narrado: a copy mudou entre chamadas (a
+// content_cache não existia no banco) e o cache por (tópico,dia,idioma) serviu a
+// voz de um texto sobre a tela de outro — 2ª metade toda dessincronizada. Com o
+// hash, texto diferente NUNCA casa com voz velha; no pior caso regenera (~US$0,02).
+export function hashRoteiro(text: string): string {
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+function cacheKey(topic: string, day: string, lang: string, roteiro: string): string {
+  return `${topic}|${day}|${lang}|${ROTEIRO_VERSAO}|${hashRoteiro(roteiro)}`;
 }
 
 // O cache guarda a MEDIDA junto com o áudio (duração real + tempo de cada palavra).
 // Sem isso o re-disparo reusaria o mp3 mas perderia a sincronia.
 async function readCachedNarration(
-  topic: string, day: string, lang: string,
+  topic: string, day: string, lang: string, roteiro: string,
 ): Promise<{ url: string; durationSec: number; words: NarrationWord[] } | null> {
   try {
     const { sql } = await import("@vercel/postgres");
-    const key = cacheKey(topic, day, lang);
+    const key = cacheKey(topic, day, lang, roteiro);
     const rows = await sql<{ url: string; duration_sec: number | null; words: unknown }>`
       SELECT url, duration_sec, words FROM narration_cache
       WHERE cache_key = ${key} AND url <> 'PENDING' AND created_at > NOW() - INTERVAL '48 hours'
@@ -90,11 +101,11 @@ async function readCachedNarration(
 }
 
 async function writeCachedNarration(
-  topic: string, day: string, lang: string, url: string, durationSec: number, words: NarrationWord[],
+  topic: string, day: string, lang: string, roteiro: string, url: string, durationSec: number, words: NarrationWord[],
 ): Promise<void> {
   try {
     const { sql } = await import("@vercel/postgres");
-    const key = cacheKey(topic, day, lang);
+    const key = cacheKey(topic, day, lang, roteiro);
     const wordsJson = JSON.stringify(words ?? []);
     await sql`
       INSERT INTO narration_cache (cache_key, url, topic, lang, duration_sec, words, created_at)
@@ -209,8 +220,9 @@ export async function generateNarration(
   if (!FAL_KEY) return { url: null, error: "FAL_KEY ausente" };
   if (clean.length < 20) return { url: null, error: "roteiro de narração vazio/curto" };
 
-  // Cache por (tópico, dia, idioma) — re-disparo reusa (gasto fal = 0).
-  const hit = await readCachedNarration(topic, day, lang);
+  // Cache por (tópico, dia, idioma, HASH do texto) — re-disparo do MESMO roteiro
+  // reusa (gasto fal = 0); texto diferente nunca casa (voz = tela, sempre).
+  const hit = await readCachedNarration(topic, day, lang, clean);
   if (hit) return { url: hit.url, cached: true, durationSec: hit.durationSec, words: hit.words };
 
   const automation: Automation = opts.automation ?? "ig-reels";
@@ -282,7 +294,7 @@ export async function generateNarration(
       ? durationSec
       : (words.length ? words[words.length - 1].end : 0);
 
-    await writeCachedNarration(topic, day, lang, finalUrl, duracaoFinal, words);
+    await writeCachedNarration(topic, day, lang, clean, finalUrl, duracaoFinal, words);
     return {
       url: finalUrl, cached: false, durationSec: duracaoFinal, words,
       error: erroTempos ? `voz ok; legenda sem tempos (${erroTempos})` : undefined,

@@ -195,6 +195,25 @@ export async function GET(req: NextRequest) {
     results.push("editions table: " + String(e));
   }
 
+  // Tabela content_cache — a COPY por (tópico, dia, idioma). ⚠️ src/lib/content-cache.ts
+  // SEMPRE leu/escreveu esta tabela, mas ela NUNCA foi criada aqui (buraco do clone,
+  // achado 29/07/2026): a leitura falhava em silêncio (fail-open) e a copy nascia DE
+  // NOVO a cada chamada — foi a raiz da voz narrando um texto e a tela mostrando outro.
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS content_cache (
+        cache_key  TEXT PRIMARY KEY,
+        topic      TEXT,
+        lang       TEXT,
+        content    JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    results.push("content_cache table: ok");
+  } catch (e) {
+    results.push("content_cache table: " + String(e));
+  }
+
   // Tabela narration_cache — voz TTS do Reel por (tópico, dia, idioma). Re-disparo
   // reusa (não repaga a fal). Guarda também a MEDIDA da voz (duração real + tempo
   // de cada palavra) — sem ela o re-disparo perderia a sincronia. Ver src/lib/narration.ts.
