@@ -50,7 +50,10 @@ jobs:
               4|5)   base="instagram-posts";          extra="" ;;
               *)     echo "run $run desconhecido — pulando"; continue ;;
             esac
-            if [ "$lang" = "pt" ]; then wf="${base}-pt.yml"; else wf="${base}.yml"; fi
+            # Conta única PT-BR: workflows têm nome BASE (sem sufixo de idioma). O
+            # clone do DR mapeava pt→"${base}-pt.yml" (inexistente aqui) e o
+            # catch-up falhava calado. runs-status só emite lang=pt (run-ledger.ts).
+            wf="${base}.yml"
 
             echo "::notice title=Catch-up::redisparando $wf run=$run ($lang)"
             # shellcheck disable=SC2086

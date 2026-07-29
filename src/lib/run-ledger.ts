@@ -11,6 +11,41 @@ export function dayUTC(date = new Date()): string {
   return date.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
 }
 
+// ─── Cronograma de publicação (FONTE ÚNICA — P8) ─────────────────────────────
+// Consumido por /api/runs-status (o watchdog) e /api/catchup. Antes cada rota
+// tinha sua própria cópia com valores do clone do DR — e divergiam do que o UPM
+// realmente publica, fabricando "vagas fantasmas" que o catch-up redisparava.
+//
+// IDIOMAS ATIVOS: @umpaisdemerda é CONTA ÚNICA PT-BR (ver getLang em accounts.ts,
+// que sempre devolve "pt"). O clone trazia ["es","pt"]; "es" NUNCA publica aqui →
+// aparecia sempre como "faltando" e o catch-up disparava um idioma inexistente.
+export const ACTIVE_LANGS = ["pt"] as const;
+
+// Hora UTC de cada run AGENDADO (espelha os crons dos workflows). Só entram runs
+// com cron LIGADO: reels run 0 (12:17 BRT) e 1 (17:17 BRT); posts run 4 (09:17) e
+// 5 (14:17). Runs 2 (reel noite) e 3 (reel clássico) estão DESLIGADOS (cadência
+// 2 reels/dia) → NÃO entram aqui, senão o catch-up os ressuscitaria como vaga
+// fantasma. Religar um run = descomentar o cron no workflow E readicionar aqui.
+export const RUN_HOUR_UTC: Record<number, number> = { 0: 15, 1: 20, 4: 12, 5: 17 };
+export const GRACE_MIN = 75; // carência após o horário do cron antes de "faltando"
+
+// Runs que já venceram (por agora, UTC) e ainda NÃO publicaram, por idioma ativo.
+// "Vencido" = hora do cron + carência já passou. `nowMin` = minutos UTC do dia.
+export function pendingRuns(
+  published: Record<string, number[]>, nowMin: number,
+): { lang: string; run: number }[] {
+  const out: { lang: string; run: number }[] = [];
+  for (const lang of ACTIVE_LANGS) {
+    const done = new Set(published[lang] ?? []);
+    for (const [runStr, hour] of Object.entries(RUN_HOUR_UTC)) {
+      const run = Number(runStr);
+      const dueMin = hour * 60 + GRACE_MIN;
+      if (nowMin >= dueMin && !done.has(run)) out.push({ lang, run });
+    }
+  }
+  return out;
+}
+
 // Já existe publicação registrada para (dia, run, lang)? Fail-open: em erro de
 // banco devolve false (NÃO bloqueia o publish — preferimos publicar a travar).
 export async function runAlreadyPublished(day: string, run: number, lang: string): Promise<boolean> {
