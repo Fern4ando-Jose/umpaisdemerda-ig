@@ -577,7 +577,10 @@ export async function GET(req: NextRequest) {
     // o MESMO pedido que o card final mostra (voz = tela; um pedido só). Sem falar o
     // @handle (era o que embolava a voz no DR). A cena final começa quando a voz
     // começa o fecho — mesma mecânica das outras cenas, nada é espremido.
-    const fechoFalado = [content.cta, "Siga o perfil."].map((s) => String(s || "").trim()).filter(Boolean).join(" ");
+    // Frase do fecho trocada 29/07 à noite (dono: "'Siga o perfil' ficou meio
+    // estranho... tinha que ser mais chamativa"): fala o NOME da página e amarra
+    // com a tese (cada dia tem escândalo novo).
+    const fechoFalado = [content.cta, "Segue o Um País de Merda — amanhã o escândalo é outro."].map((s) => String(s || "").trim()).filter(Boolean).join(" ");
     const narrationSegments = [content.postTitle, ...spokenSlides, fechoFalado]
       .map((s) => String(s).trim()).filter(Boolean)
       .map((s) => (/[.!?]$/.test(s) ? s : s + "."));
