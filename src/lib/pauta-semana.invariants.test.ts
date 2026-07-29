@@ -20,7 +20,7 @@ describe("pauta quente — quais publicações usam manchete", () => {
   });
 });
 
-describe("guarda apartidária — a copy não pode entregar a manchete", () => {
+describe("guarda apartidária — nome de pessoa e partido NUNCA; órgão e fato APARECEM", () => {
   it("barra sigla de partido", () => {
     expect(copyLeaksName(["O PT aprovou mais um aumento"])).toBe(true);
   });
@@ -29,8 +29,16 @@ describe("guarda apartidária — a copy não pode entregar a manchete", () => {
     expect(copyLeaksName(["o ministro Fulano decidiu sozinho"])).toBe(true);
   });
 
-  it("barra instituição nomeada", () => {
-    expect(copyLeaksName(["o STF decidiu em segredo"])).toBe(true);
+  it("barra nome próprio composto (par de Capitalizadas fora do vocabulário)", () => {
+    expect(copyLeaksName(["Jair Messias assinou o decreto"])).toBe(true);
+    expect(copyLeaksName(["Lula Silva prometeu de novo"])).toBe(true);
+  });
+
+  it("LIBERA instituição nomeada — sem o órgão o escândalo não é reconhecível (ordem do dono 29/07)", () => {
+    expect(copyLeaksName(["o STF decidiu em segredo"])).toBe(false);
+    expect(copyLeaksName(["O INSS deixou sumir R$ 547 milhões e ninguém foi preso"])).toBe(false);
+    expect(copyLeaksName(["A Receita Federal perdeu o controle do próprio cofre"])).toBe(false);
+    expect(copyLeaksName(["O Congresso Nacional votou o próprio aumento"])).toBe(false);
   });
 
   it("libera a régua da marca (termos abstratos em maiúscula)", () => {

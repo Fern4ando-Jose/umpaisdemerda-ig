@@ -1,8 +1,10 @@
-// ─── 2ª FRENTE: corrupção da semana (notícia → padrão apartidário) ────────────
-// O coletor (scripts/coletor-pauta.mjs, cron de segunda) grava as manchetes NOVAS
-// da semana em data/pauta-semana.json. Aqui o app lê uma manchete como GATILHO do
-// PADRÃO — o post gerado é atemporal e apartidário (a régua do prompt força isso),
-// e uma GUARDA DE CÓDIGO rejeita a saída se vazar nome/partido → cai em tema fixo.
+// ─── 2ª FRENTE: escândalo do dia (notícia → crítica RECONHECÍVEL e apartidária) ──
+// O coletor (scripts/coletor-pauta.mjs, cron diário 06:00 BRT) grava as manchetes
+// NOVAS em data/pauta-semana.json. Aqui o app lê uma manchete e o post gerado é
+// SOBRE o caso — órgão, quantia e fato APARECEM (ordem do dono 27/07 e 29/07/2026:
+// antes o prompt mandava esconder tudo e a pesquisa ficava invisível no feed).
+// A régua apartidária segue INVIOLÁVEL no seu núcleo: nome de pessoa e partido
+// NUNCA — e a GUARDA DE CÓDIGO abaixo rejeita a saída se vazar → cai em tema fixo.
 import pautaJson from "../../data/pauta-semana.json";
 
 // Frente do coletor → pilar (cat) da automação.
@@ -41,22 +43,30 @@ export function usaPautaNoSlot(slot: string): boolean {
   return slot !== "manha";
 }
 
-// GUARDA anti-vazamento: rejeita a copy se parecer que citou nome/partido/figura da
-// notícia (a régua já proíbe, mas isto é o backstop de código — como o literal-lock).
-// Erra para o lado de REJEITAR: um falso-positivo só faz o run cair num tema fixo.
+// GUARDA anti-vazamento: rejeita a copy se parecer que citou nome de PESSOA ou
+// PARTIDO (a régua já proíbe, mas isto é o backstop de código — como o literal-lock).
+// ⚠️ Instituição/órgão (INSS, Receita Federal, STF, Congresso) é PERMITIDA desde
+// 29/07/2026 — sem o órgão o escândalo não é reconhecível e a pesquisa vira nada.
+// Erra para o lado de REJEITAR só no que resta: um falso-positivo cai em tema fixo.
 const SIGLAS = /\b(PT|PL|PSDB|PSD|PP|MDB|PDT|PSOL|PC\s?do\s?B|PSB|PSC|PROS|PTB|PV|PCB|PCO|DEM|PODE|REPUBLICANOS|NOVO|AVANTE|SOLIDARIEDADE|CIDADANIA|UNIÃO\s+BRASIL|PATRIOTA|AGIR)\b/;
 const CARGO_NOME = /\b(presidente|ministr[oa]|deputad[oa]|senador[a]?|governador[a]?|prefeit[oa]|vereador[a]?|desembargador[a]?|relator[a]?)\s+[A-ZÁÉÍÓÚÂÊÔÃÕ][a-záéíóúâêôãõ]+/;
-const INSTITUICOES = /\b(STF|STJ|TSE|TCU|Planalto|Congresso Nacional|Câmara dos Deputados|Palácio do)\b/;
 // Par (ou mais) de palavras Capitalizadas seguidas = provável nome próprio/composto
-// (ex.: "Jair Messias", "Lula Silva"). EXCETO se TODAS forem termos abstratos da
-// marca (a página usa "Servidão Voluntária", "Estado", "Brasil" em maiúscula).
+// (ex.: "Jair Messias", "Lula Silva"). EXCETO se TODAS forem termos da marca OU
+// vocabulário de INSTITUIÇÃO (o escândalo precisa nomear o órgão para ser
+// reconhecível — "Receita Federal", "Congresso Nacional", "Banco Central").
 const PAR_CAPS = /[A-ZÁÉÍÓÚÂÊÔÃÕ][a-záéíóúâêôãõ]{2,}(?:\s+[A-ZÁÉÍÓÚÂÊÔÃÕ][a-záéíóúâêôãõ]{2,})+/g;
-const MARCA_OK = new Set(["servidao","voluntaria","estado","brasil","pais","patria","nacao","republica","deus","casta","poder","povo","liberdade"]);
+const MARCA_OK = new Set([
+  "servidao","voluntaria","estado","brasil","pais","patria","nacao","republica","deus","casta","poder","povo","liberdade",
+  // vocabulário institucional (órgão nomeado ≠ pessoa/partido):
+  "receita","federal","congresso","nacional","camara","deputados","senado","supremo","tribunal","justica","contas",
+  "uniao","central","banco","previdencia","social","orcamento","secreto","ministerio","publico","publica","policia",
+  "governo","planalto","tesouro","saude","educacao","seguranca","brasilia",
+]);
 const norm = (w: string) => w.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 export function copyLeaksName(texts: string[]): boolean {
   const blob = texts.filter(Boolean).join("  ");
-  if (SIGLAS.test(blob) || CARGO_NOME.test(blob) || INSTITUICOES.test(blob)) return true;
+  if (SIGLAS.test(blob) || CARGO_NOME.test(blob)) return true;
   for (const m of blob.match(PAR_CAPS) || []) {
     const words = m.split(/\s+/).map(norm);
     if (!words.every((w) => MARCA_OK.has(w))) return true; // algum termo não-marca → nome

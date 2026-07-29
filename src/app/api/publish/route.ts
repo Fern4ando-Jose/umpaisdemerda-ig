@@ -12,6 +12,8 @@ import { buildRotation, topicIndexForRun, slotForRun, pickFreshTopicIndex } from
 import { editionFor } from "@/lib/edition";
 import { searchDuckDuckGo } from "@/lib/ddg";
 import { buildLiteralDirective } from "@/lib/literal-lock";
+import { generateNarration } from "@/lib/narration";
+import { dedupeSlides } from "@/lib/slide-dedup";
 
 // Aumenta o limite de execução para 60s (Vercel Hobby permite até 300s)
 export const maxDuration = 300;
@@ -225,11 +227,14 @@ async function generateContent(
     ? `\nMERCADO / VOZ NATIVA — LEIA ANTES DE TUDO (vale mais que qualquer exemplo abaixo):\n${acc.marketBrief}\n`
     : "";
 
-  // 2ª FRENTE (corrupção da semana): a manchete real entra só como GATILHO do
-  // PADRÃO. A régua apartidária abaixo continua INVIOLÁVEL — o post é atemporal e
-  // NÃO cita nada da manchete. (Backstop de código copyLeaksName rejeita se vazar.)
+  // 2ª FRENTE (escândalo do dia): o post é SOBRE o caso — o leitor tem de
+  // RECONHECER o escândalo (ordem do dono 27/07 e 29/07/2026: "a crítica deve ser
+  // sobre o escândalo do governo" / "ligar as pesquisas para posts"). A régua
+  // apartidária continua INVIOLÁVEL no que ela sempre foi: nome de pessoa e
+  // partido NUNCA — mas órgão, valor e fato APARECEM, senão a pesquisa é invisível.
+  // (Backstop de código copyLeaksName rejeita se vazar nome/partido.)
   const newsSection = newsInspiration
-    ? `\nGATILHO DA SEMANA (uma manchete REAL do noticiário, use APENAS como faísca para achar o PADRÃO por trás — casta/Estado/servidão): "${newsInspiration}"\nOBRIGATÓRIO: NÃO cite, NÃO parafraseie e NÃO deixe reconhecer nada dessa manchete — nem nomes, siglas, partidos, cargos, instituições, lugares, datas ou o fato específico. Extraia só o MECANISMO atemporal e escreva sobre ELE. Se não der pra abstrair sem entregar a manchete, escreva sobre o padrão do pilar de forma genérica.\nCAIXA: escreva o título e os insights em CAIXA NORMAL de frase (só a inicial maiúscula) — NUNCA Title Case (não capitalize cada palavra) nem TUDO MAIÚSCULO; a tela já deixa o título em maiúsculas sozinha.\n`
+    ? `\nESCÂNDALO DO DIA (manchete REAL do noticiário): "${newsInspiration}"\nOBRIGATÓRIO: o post é SOBRE este caso — quem lê tem de RECONHECER o escândalo: cite o órgão/instituição envolvido, a quantia (R$) quando houver e O QUE aconteceu, nas suas palavras. Ligue o caso ao MECANISMO do pilar (a casta que explora, o Estado que rouba, o servo que aplaude): o escândalo de hoje é a prova do padrão de sempre.\nPROIBIDO (régua apartidária, INVIOLÁVEL): citar nome de pessoa, partido ou sigla partidária, ou torcer para um lado — escreva "o ministro", "a excelência", "o deputado", "o partido da vez". A casta é UMA, esquerda e direita.\nCAIXA: escreva o título e os insights em CAIXA NORMAL de frase (só a inicial maiúscula) — NUNCA Title Case (não capitalize cada palavra) nem TUDO MAIÚSCULO; a tela já deixa o título em maiúsculas sozinha.\n`
     : "";
 
   const prompt = `Você é o editor de "${acc.brand}" (${acc.handle}), uma página brasileira de SÁTIRA POLÍTICA LIBERTÁRIA, ANTI-CASTA E APARTIDÁRIA.
@@ -551,6 +556,29 @@ export async function GET(req: NextRequest) {
       illustrationError = ill.error ?? null;
     }
 
+    // ─── NARRAÇÃO (voz Bill BR — portada do DR, ordem do dono 29/07) ─────────
+    // A voz fala EXATAMENTE os slides que a tela MOSTRA (dedupados, cap 3).
+    // TETO DE DURAÇÃO: com o áudio virando o relógio, roteiro comprido = vídeo
+    // comprido (no DR um Reel saiu com 32s). A correção é encurtar o TEXTO,
+    // nunca acelerar a voz — corta o último insight enquanto não couber, num
+    // lugar só (a mesma lista vira o roteiro falado E os slides da tela).
+    const CHARS_POR_SEG = 11.6;  // ritmo medido da voz
+    const FALA_MAX_SEG = 20;     // ~21s de vídeo com o respiro
+    const TETO_CHARS = Math.round(FALA_MAX_SEG * CHARS_POR_SEG);
+    const spokenSlides = dedupeSlides(content.postTitle, content.slides).slice(0, 3);
+    const tamanhoRoteiro = (ss: string[]) => [content.postTitle, ...ss].join(" ").length;
+    while (spokenSlides.length > 1 && tamanhoRoteiro(spokenSlides) > TETO_CHARS) {
+      spokenSlides.pop();
+    }
+    // Blocos do roteiro NA ORDEM falada — o render usa esta MESMA lista pra saber
+    // onde cada cena começa (fonte única do alinhamento voz↔tela). Sem fecho falado.
+    const narrationSegments = [content.postTitle, ...spokenSlides]
+      .map((s) => String(s).trim()).filter(Boolean)
+      .map((s) => (/[.!?]$/.test(s) ? s : s + "."));
+    const narrationText = narrationSegments.join(" ");
+    // SEM janela-alvo: a voz sai em velocidade natural e o VÍDEO se ajusta a ela.
+    const narr = await generateNarration(narrationText, lang, topic, day, { automation: "ig-reels", meta: { run: r } });
+
     return NextResponse.json({
       preview: true,
       slot, run: r, topic, cat,
@@ -558,7 +586,9 @@ export async function GET(req: NextRequest) {
       handle: accountFor(lang).handle, // @ correto por idioma (criativo do Reel)
       brand: accountFor(lang).brand, // nome de exibição por idioma
       title: content.postTitle,
-      slides: content.slides,
+      // Com voz, a TELA mostra exatamente os slides que a VOZ narra (dedupados e
+      // cortados pelo teto acima) — mantém "voz = tela". Sem voz, a lista crua.
+      slides: narr.url ? spokenSlides : content.slides,
       accentWords: [],
       cta: content.cta,
       caption: content.instagramCaption,
@@ -566,6 +596,13 @@ export async function GET(req: NextRequest) {
       videoQueries, // canônicos (compartilhados entre idiomas)
       clips,        // footage COMPARTILHADO (mesmo vídeo ES/PT); [] → fetch-footage.mjs busca no CI
       sharedFootage: clips.length > 0, // diagnóstico: veio da base compartilhada?
+      narrationUrl: narr.url ?? undefined, // voz TTS (gated REEL_NARRATION_ENABLED); ausente → Reel mudo
+      // A MEDIDA da voz — dimensiona o vídeo e trava a legenda (o áudio é o
+      // relógio). Ausentes → o render cai na fórmula de slides, sem regressão.
+      narrationDurationSec: narr.durationSec,
+      narrationWords: narr.words,
+      narrationSegments: narr.url ? narrationSegments : undefined, // fronteiras de cena = fronteiras da fala
+      narrationError: narr.error,
       illustration: illustrationUrl,
       illustrationError,
     });
