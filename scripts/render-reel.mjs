@@ -40,11 +40,14 @@ function loadInputProps() {
   return undefined;
 }
 
-// Composição a renderizar: --composition=Reel|ReelClassic ou REEL_COMPOSITION.
+// Composição a renderizar: --composition=Reel|ReelV2|ReelClassic ou REEL_COMPOSITION.
+// ⚠️ A lista é um WHITELIST de verdade: id desconhecido cai em "Reel". Foi esta linha
+// que silenciosamente rebaixou o 1º render narrado (29/07): o workflow pedia ReelV2 e
+// aqui virava "Reel" sem nenhum aviso — composição nova TEM de entrar na lista.
 function loadComposition() {
   const arg = process.argv.find((a) => a.startsWith("--composition="));
   const id = arg ? arg.slice("--composition=".length) : process.env.REEL_COMPOSITION || "Reel";
-  return id === "ReelClassic" ? "ReelClassic" : "Reel";
+  return ["Reel", "ReelV2", "ReelClassic"].includes(id) ? id : "Reel";
 }
 
 async function main() {
