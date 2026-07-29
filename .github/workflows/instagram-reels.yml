@@ -17,7 +17,11 @@ on:
   schedule:
     - cron: "17 15 * * *" # 12:17 BRT (run 0)
     - cron: "17 20 * * *" # 17:17 BRT (run 1)
-    # - cron: "17 0 * * *"  # 21:17 BRT (run 2) — desligado (cadência 2 reels/dia)
+    # 3º reel LIGADO 29/07/2026 (ordem do dono: "deixa 3 reel e apenas 1 carrossel").
+    # 19:47 BRT e NÃO 21:17: 21:17 BRT = 00:17 do dia seguinte no relógio universal
+    # (UTC) — o dia-chave viraria e a trava anti-duplicata/resgate trataria o reel
+    # como de OUTRO dia. 19h também é a janela de melhor alcance medida no DR.
+    - cron: "47 22 * * *" # 19:47 BRT (run 2)
   workflow_dispatch:
     inputs:
       run:

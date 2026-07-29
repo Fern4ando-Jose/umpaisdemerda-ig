@@ -14,8 +14,10 @@ describe("pauta quente — quais publicações usam manchete", () => {
     expect(usaPautaNoSlot("noite")).toBe(true);
   });
 
-  it("dos 4 runs diários (reel manha, reel tarde, post tarde, post noite) exatamente 3 usam", () => {
-    const slotsDoDia = ["manha", "tarde", "tarde", "noite"];
+  it("dos 4 runs diários (carrossel tarde, reel manha, reel tarde, reel noite) exatamente 3 usam", () => {
+    // Grade 29/07/2026: carrossel 09:17 (tarde) · reel 12:17 (manha, a espinha
+    // atemporal) · reel 17:17 (tarde) · reel 19:47 (noite).
+    const slotsDoDia = ["tarde", "manha", "tarde", "noite"];
     expect(slotsDoDia.filter(usaPautaNoSlot).length).toBe(3);
   });
 });

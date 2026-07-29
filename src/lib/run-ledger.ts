@@ -22,11 +22,12 @@ export function dayUTC(date = new Date()): string {
 export const ACTIVE_LANGS = ["pt"] as const;
 
 // Hora UTC de cada run AGENDADO (espelha os crons dos workflows). Só entram runs
-// com cron LIGADO: reels run 0 (12:17 BRT) e 1 (17:17 BRT); posts run 4 (09:17) e
-// 5 (14:17). Runs 2 (reel noite) e 3 (reel clássico) estão DESLIGADOS (cadência
-// 2 reels/dia) → NÃO entram aqui, senão o catch-up os ressuscitaria como vaga
-// fantasma. Religar um run = descomentar o cron no workflow E readicionar aqui.
-export const RUN_HOUR_UTC: Record<number, number> = { 0: 15, 1: 20, 4: 12, 5: 17 };
+// com cron LIGADO. Grade de 29/07/2026 (ordem do dono: "deixa 3 reel e apenas 1
+// carrossel"): reels run 0 (12:17 BRT), 1 (17:17) e 2 (19:47); carrossel run 4
+// (09:17). Runs 5 (2º carrossel) e 3 (reel clássico) DESLIGADOS → NÃO entram
+// aqui, senão o catch-up os ressuscitaria como vaga fantasma. Religar um run =
+// descomentar o cron no workflow E readicionar aqui.
+export const RUN_HOUR_UTC: Record<number, number> = { 0: 15, 1: 20, 2: 22, 4: 12 };
 export const GRACE_MIN = 75; // carência após o horário do cron antes de "faltando"
 
 // Runs que já venceram (por agora, UTC) e ainda NÃO publicaram, por idioma ativo.

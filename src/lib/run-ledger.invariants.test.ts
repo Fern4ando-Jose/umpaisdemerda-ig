@@ -12,24 +12,27 @@ describe("cronograma — sem vaga fantasma (es / runs desligados)", () => {
     expect(ACTIVE_LANGS).not.toContain("es");
   });
 
-  it("runs agendados = só os com cron ligado (0,1,4,5); 2 e 3 fora", () => {
-    expect(Object.keys(RUN_HOUR_UTC).map(Number).sort((a, b) => a - b)).toEqual([0, 1, 4, 5]);
-    expect(RUN_HOUR_UTC[2]).toBeUndefined();
+  // Grade de 29/07/2026 (ordem do dono: "deixa 3 reel e apenas 1 carrossel"):
+  // reels 0 (12:17), 1 (17:17), 2 (19:47) + carrossel 4 (09:17). Runs 5 (2º
+  // carrossel) e 3 (reel clássico) desligados.
+  it("runs agendados = só os com cron ligado (0,1,2,4); 3 e 5 fora", () => {
+    expect(Object.keys(RUN_HOUR_UTC).map(Number).sort((a, b) => a - b)).toEqual([0, 1, 2, 4]);
     expect(RUN_HOUR_UTC[3]).toBeUndefined();
+    expect(RUN_HOUR_UTC[5]).toBeUndefined();
   });
 
-  it("pendingRuns nunca emite es nem run 2/3, mesmo com dia inteiro vencido", () => {
+  it("pendingRuns nunca emite es nem run 3/5, mesmo com dia inteiro vencido", () => {
     const nowMin = 24 * 60 - 1; // fim do dia UTC → todo run vencido
     const missing = pendingRuns({}, nowMin); // nada publicado ainda
     expect(missing.every((m) => m.lang === "pt")).toBe(true);
-    expect(missing.some((m) => m.run === 2 || m.run === 3)).toBe(false);
-    expect(missing.map((m) => m.run).sort((a, b) => a - b)).toEqual([0, 1, 4, 5]);
+    expect(missing.some((m) => m.run === 3 || m.run === 5)).toBe(false);
+    expect(missing.map((m) => m.run).sort((a, b) => a - b)).toEqual([0, 1, 2, 4]);
   });
 
   it("run já publicado (pt) sai da lista de faltantes", () => {
     const nowMin = 24 * 60 - 1;
     const missing = pendingRuns({ pt: [0, 4] }, nowMin);
-    expect(missing.map((m) => m.run).sort((a, b) => a - b)).toEqual([1, 5]);
+    expect(missing.map((m) => m.run).sort((a, b) => a - b)).toEqual([1, 2]);
   });
 
   it("antes de vencer (carência) o run não conta como faltante", () => {

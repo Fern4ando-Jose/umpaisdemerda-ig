@@ -7,8 +7,9 @@ name: Instagram — publicar posts
 # disparou (github.event.schedule), NÃO da hora do relógio. slot/tom = run % 3.
 on:
   schedule:
-    - cron: "17 12 * * *" # 09:17 BRT (run 4)
-    - cron: "17 17 * * *" # 14:17 BRT (run 5)
+    - cron: "17 12 * * *" # 09:17 BRT (run 4) — o ÚNICO carrossel do dia
+    # run 5 (14:17) DESLIGADO 29/07/2026 — ordem do dono: "deixa 3 reel e apenas
+    # 1 carrossel". A vaga virou o 3º reel (instagram-reels.yml, run 2).
   workflow_dispatch:
     inputs:
       run:
