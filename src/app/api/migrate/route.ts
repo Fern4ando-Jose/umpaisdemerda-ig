@@ -195,6 +195,26 @@ export async function GET(req: NextRequest) {
     results.push("editions table: " + String(e));
   }
 
+  // Tabela narration_cache — voz TTS do Reel por (tópico, dia, idioma). Re-disparo
+  // reusa (não repaga a fal). Guarda também a MEDIDA da voz (duração real + tempo
+  // de cada palavra) — sem ela o re-disparo perderia a sincronia. Ver src/lib/narration.ts.
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS narration_cache (
+        cache_key    TEXT PRIMARY KEY,
+        url          TEXT NOT NULL,
+        topic        TEXT,
+        lang         TEXT,
+        duration_sec REAL,
+        words        JSONB,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    results.push("narration_cache table: ok");
+  } catch (e) {
+    results.push("narration_cache table: " + String(e));
+  }
+
   // Tabela spend_log — contabiliza cada chamada paga (fal/Anthropic/Tavily) por
   // automação, p/ a visão de /api/spend e o teto diário por automação (src/lib/spend.ts).
   try {

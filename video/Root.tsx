@@ -7,6 +7,7 @@
 import React from "react";
 import { Composition } from "remotion";
 import { Reel, reelDefaultProps, reelDurations, ReelProps, FPS } from "./Reel";
+import { ReelV2, reelV2DefaultProps, reelDurationsV2, reelPlanV2 } from "./ReelV2";
 import { ReelClassic, reelClassicDefaultProps, ReelClassicProps } from "./ReelClassic";
 
 // Duração do motor clássico (mesma matemática inline do componente original).
@@ -32,6 +33,23 @@ export const RemotionRoot: React.FC = () => {
           const p = props as ReelProps;
           const count = p.slides && p.slides.length ? p.slides.length : reelDefaultProps.slides.length;
           return { durationInFrames: reelDurations(count).total };
+        }}
+      />
+
+      {/* ReelV2 — NARRADO (produção desde 2026-07-29): a voz dita a duração via
+          reelPlanV2 (fonte única componente + metadata). Sem voz nos props, cai
+          na fórmula capa 3s + insights 5,6s×n + cta 4,6s. */}
+      <Composition
+        id="ReelV2"
+        component={ReelV2}
+        durationInFrames={reelDurationsV2(reelV2DefaultProps.slides.length).total}
+        fps={FPS}
+        width={1080}
+        height={1920}
+        defaultProps={reelV2DefaultProps}
+        calculateMetadata={({ props }) => {
+          const p = props as ReelProps;
+          return { durationInFrames: reelPlanV2(p, FPS).total };
         }}
       />
 

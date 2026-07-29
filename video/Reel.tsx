@@ -104,6 +104,11 @@ export type ReelProps = {
   cat?: string; // categoria → cor de acento
   handle?: string; // @ da conta por idioma (ex.: "@dr.liberdad" | "@dr.liberdade.br")
   brand?: string; // nome de exibição (ex.: "Dr. Libertad" | "Dr. Liberdade")
+  // ─── Narração (voz TTS) — SÓ o ReelV2 consome (o Reel clássico ignora) ──────
+  narrationUrl?: string; // URL do áudio de narração — opcional
+  narrationDurationSec?: number; // duração medida do mp3 (não estimada)
+  narrationWords?: Array<{ text: string; start: number; end: number }>; // tempo de cada palavra falada
+  narrationSegments?: string[];  // blocos do roteiro na ordem falada (título, insights)
 };
 
 export const reelDefaultProps: ReelProps = {
@@ -247,7 +252,8 @@ function SceneBg({
 }
 
 // Envelope comum de cena: fundo graded + scrim + textura + conteúdo (texto).
-function Scene({
+// EXPORTADO para o ReelV2 reusar a MESMA cara de marca — sem copiar, sem drift.
+export function Scene({
   clip,
   img,
   kw,

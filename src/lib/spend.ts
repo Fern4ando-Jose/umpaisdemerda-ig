@@ -40,7 +40,10 @@ const TAVILY_PRICE = 0.01;
 // legítimos. Dono libera mais via POST /api/spend?automation=&budget= se precisar.
 const DEFAULT_BUDGETS: Record<Automation, number> = {
   "ig-posts": 0.05, // 2 carrosséis/dia (só copy Anthropic, sem fal)
-  "ig-reels": 0.08, // 4 reels/dia (só copy; footage Pexels é grátis)
+  "ig-reels": 0.15, // 2 reels/dia: copy + NARRAÇÃO (voz Bill, ~US$0,02/reel — ligada
+                    // 29/07/2026 por ordem do dono; real ~US$0,05-0,07/dia). Teto com
+                    // folga p/ retry — no DR a voz estourou o teto e a esteira caiu
+                    // sem ninguém saber; aqui, estourou → narração é PULADA (fail-open).
   manual: 0.05,     // testes/dryrun
 };
 

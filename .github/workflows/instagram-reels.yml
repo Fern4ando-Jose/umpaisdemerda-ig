@@ -119,7 +119,16 @@ jobs:
               // Trilha embutida (camada de criação, opcional). UMA FAIXA POR TEMA:
               // o picker acha no manifest.json a faixa do `topic` do post; sem ela,
               // cai na rotação antiga por `run` (bed-0.mp3, …); sem nenhuma → mudo.
-              music: require("./scripts/pick-music.cjs").pickMusic({ topic: p.topic, run: ${{ steps.params.outputs.run }} }) || undefined
+              music: require("./scripts/pick-music.cjs").pickMusic({ topic: p.topic, run: ${{ steps.params.outputs.run }} }) || undefined,
+              // Narração (voz TTS) — só quando REEL_NARRATION_ENABLED; a API já gerou e
+              // devolveu a URL. Ausente → Reel sem voz (fórmula de sempre).
+              narrationUrl: p.narrationUrl || undefined,
+              // A MEDIDA da voz (o áudio é o relógio): duração REAL do mp3, tempo de cada
+              // palavra e os blocos do roteiro na ordem falada. Campo que não é copiado
+              // aqui simplesmente não chega ao render.
+              narrationDurationSec: p.narrationDurationSec || undefined,
+              narrationWords: Array.isArray(p.narrationWords) && p.narrationWords.length ? p.narrationWords : undefined,
+              narrationSegments: Array.isArray(p.narrationSegments) && p.narrationSegments.length ? p.narrationSegments : undefined
             };
             fs.writeFileSync("caption.txt", p.caption || p.title || "");
             fs.writeFileSync("slot.txt", p.slot || "noite");
@@ -174,7 +183,7 @@ jobs:
       # 6. Renderiza o Reel para out/reel.mp4 (só se há fundo de verdade).
       - name: Renderizar Reel (Remotion)
         if: ${{ steps.media.outputs.has_media == '1' }}
-        run: node scripts/render-reel.mjs --props=reel-props.json
+        run: node scripts/render-reel.mjs --props=reel-props.json --composition=ReelV2
 
       # 7. Sobe o mp4 para um GitHub Release público (repo de assets dedicado) e
       #    captura a URL pública (stdout). Vercel Blob suspenso 2026-07-15 (conta
