@@ -57,7 +57,11 @@ jobs:
             git config user.name  "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add data/pauta-seen.json data/pauta-semana.json
-            git commit -m "chore(pauta): atualiza pauta do dia e dedup [skip ci]"
+            # SEM [skip ci]: data/pauta-semana.json é import ESTÁTICO (vai no bundle
+            # do Next), então a produção só enxerga a pauta nova depois de um DEPLOY.
+            # A Vercel também pula build em commit com [skip ci] — com ele, o coletor
+            # rodava todo dia e a produção continuava servindo a pauta do último deploy.
+            git commit -m "chore(pauta): atualiza pauta do dia e dedup"
             git push
           else
             echo "sem novidades — nada a commitar"
