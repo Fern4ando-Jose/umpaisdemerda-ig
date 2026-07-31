@@ -228,4 +228,11 @@ jobs:
           echo "Resposta do servidor:"
           echo "$RESP"
           echo "$RESP" | grep -q '"ok":true' || { echo "::error::Publicação falhou"; exit 1; }
+          # VERDE FALSO (corrigido 31/07/2026): {"ok":true,"skipped":true} passava no
+          # grep acima e o passo imprimia "Reel publicado." tendo renderizado e NÃO
+          # publicado. Agora o run falha e aparece na lista de execuções.
+          if echo "$RESP" | grep -q '"skipped":true'; then
+            echo "::error::Reel NÃO publicado (pulado pelo servidor): $(echo "$RESP" | head -c 200)"
+            exit 1
+          fi
           echo "Reel publicado."

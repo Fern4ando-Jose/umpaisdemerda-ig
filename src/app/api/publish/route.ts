@@ -5,7 +5,14 @@ import { type Automation, checkBudget, logSpend, anthropicCost, EST_RUN_COST } f
 import { parseContentJson } from "@/lib/content-json";
 import { dayUTC, reelSharedKey, hashStr, readReelShared, writeReelShared, selectFootage } from "@/lib/reel-shared";
 import { preflightClips } from "@/lib/footage-health";
-import { pickNewsTopic, copyLeaksName, usaPautaNoSlot } from "@/lib/pauta-semana";
+import {
+  pickNewsTopic, copyLeaksName, usaPautaNoFormato, newsSlug, NEWS_PREFIX,
+  sanitizeNomesDePessoa, entidadesPermitidas, copyCobreCaso, type NewsItem,
+} from "@/lib/pauta-semana";
+import {
+  montarFala, montarFalaDeCopy, normalizaRoteiro, duracaoEstimadaSeg, CAP, TETO_CHARS, FALA_MAX_SEG,
+  type ReelRoteiro,
+} from "@/lib/reel-script";
 import { readContentCache, writeContentCache } from "@/lib/content-cache";
 import { recordRun, recentTopicsAllLangs, runAlreadyPublished } from "@/lib/run-ledger";
 import { buildRotation, topicIndexForRun, slotForRun, pickFreshTopicIndex } from "@/lib/rotation";
@@ -147,9 +154,9 @@ const SLOT_FOR_RUN: Slot[] = ["manha", "tarde", "noite", "manha", "tarde", "noit
 // ─── Instruções por slot ──────────────────────────────────────────────────────
 
 const SLOT_INSTRUCTIONS: Record<Slot, string> = {
-  manha: "Ângulo MANHÃ: o despertar. Sacode o leitor pra começar o dia enxergando a própria coleira. Tom reflexivo e cortante, mais ideia que piada.",
+  manha: "Ângulo MANHÃ: o despertar. Sacode o leitor pra começar o dia enxergando a própria coleira. Tom reflexivo e cortante.",
   tarde: "Ângulo TARDE: o mecanismo. Mostra COMO o esquema funciona (imposto embutido, dependência, troca de liberdade por migalha) de forma concreta e didática. Tom direto e revelador.",
-  noite: "Ângulo NOITE: a provocação. Ironia ácida e alto engajamento; termina abrindo o debate. Tom ousado, de quem não tem mais paciência.",
+  noite: "Ângulo NOITE: a cobrança. Vai direto ao ponto e termina abrindo o debate. Tom duro, de quem não tem mais paciência.",
 };
 
 // ─── Pesquisa de contexto (GRÁTIS) — DuckDuckGo (web inteira) + Wikipedia (reserva) ─
@@ -162,7 +169,7 @@ const SLOT_INSTRUCTIONS: Record<Slot, string> = {
 // não traduzido). FAIL-OPEN total: erro/zero → [] e a geração segue SEM contexto.
 // Histórico: Tavily (paga) aposentada 23/06; Brave virou pago e Google fechou a API
 // JSON p/ clientes novos → DDG é a única busca grátis de web inteira (decisão 23/06).
-const WIKI_UA = "UmPaisDeMerdaBot/1.0 (research; satire/politics)";
+const WIKI_UA = "UmPaisDeMerdaBot/1.0 (research; politics)";
 
 async function searchTopic(topic: string, _automation: Automation): Promise<SearchResult[]> {
   // 1º DuckDuckGo (web inteira); se vazio/bloqueado, Wikipedia (reserva). Ambos fail-open.
@@ -237,7 +244,7 @@ async function generateContent(
     ? `\nESCÂNDALO DO DIA (manchete REAL do noticiário): "${newsInspiration}"\nOBRIGATÓRIO: o post é SOBRE este caso — quem lê tem de RECONHECER o escândalo: cite o órgão/instituição envolvido, a quantia (R$) quando houver e O QUE aconteceu, nas suas palavras. Ligue o caso ao MECANISMO do pilar (a casta que explora, o Estado que rouba, o servo que aplaude): o escândalo de hoje é a prova do padrão de sempre.\nPROIBIDO (régua apartidária, INVIOLÁVEL): citar nome de pessoa, partido ou sigla partidária, ou torcer para um lado — escreva "o ministro", "a excelência", "o deputado", "o partido da vez". A casta é UMA, esquerda e direita.\nCAIXA: escreva o título e os insights em CAIXA NORMAL de frase (só a inicial maiúscula) — NUNCA Title Case (não capitalize cada palavra) nem TUDO MAIÚSCULO; a tela já deixa o título em maiúsculas sozinha.\n`
     : "";
 
-  const prompt = `Você é o editor de "${acc.brand}" (${acc.handle}), uma página brasileira de SÁTIRA POLÍTICA LIBERTÁRIA, ANTI-CASTA E APARTIDÁRIA.
+  const prompt = `Você é o editor de "${acc.brand}" (${acc.handle}), uma página brasileira de CRÍTICA POLÍTICA LIBERTÁRIA, ANTI-CASTA E APARTIDÁRIA. NÃO é sátira: o objetivo não é fazer rir, é fazer o leitor ENCARAR o que está sendo feito com o dinheiro e a vida dele.
 
 IMPORTANTE — IDIOMA: gere ABSOLUTAMENTE TODA a saída (postTitle, postBody, slides, cta, instagramCaption, tags) em ${L}. NÃO misture idiomas. (videoQueries é a ÚNICA exceção: vai em inglês.)
 ${marketSection}
@@ -282,8 +289,8 @@ Gere um JSON válido (sem markdown, sem crases) com esta estrutura EXATA:
 }
 
 Para "videoQueries" (o FUNDO de cada cena do Reel — 3 termos EM INGLÊS, 1 por cena NA ORDEM):
-- Sátira política NÃO tem footage literal: pense em SÍMBOLO/ARQUÉTIPO, não em ilustração do tema. Busque o SUBSTANTIVO CONCRETO que simboliza (nunca conceito abstrato como "freedom"/"corruption"/"government" — isso volta lixo corporativo).
-- A alavanca mais forte é o CONTRASTE IRÔNICO: mostrar QUEM GANHA, não quem perde (texto amargo sobre imposto → footage de jantar de luxo/jato). O gap imagem↔texto é a piada.
+- Crítica política NÃO tem footage literal: pense em SÍMBOLO/ARQUÉTIPO, não em ilustração do tema. Busque o SUBSTANTIVO CONCRETO que simboliza (nunca conceito abstrato como "freedom"/"corruption"/"government" — isso volta lixo corporativo).
+- A alavanca mais forte é o CONTRASTE IRÔNICO: mostrar QUEM GANHA, não quem perde (texto amargo sobre imposto → footage de jantar de luxo/jato). O gap imagem↔texto é a denúncia, não a piada.
 - UM sujeito claro, legível em <1s, enquadramento FECHADO (escreva "close up ..." quando puder), com ROSTO humano com emoção OU movimento — nunca plano geral genérico.
 - Cada termo casa com a MENSAGEM DAQUELE beat (não com o tema geral). Arco: vítima → quem se beneficia → virada.
 - Atemporal e neutro: sem pessoas reconhecíveis, sem texto na tela, sem marcos que gritem "EUA" (Capitólio/bandeira). 2-4 palavras, deve existir no Pexels.`;
@@ -318,6 +325,110 @@ Para "videoQueries" (o FUNDO de cada cena do Reel — 3 termos EM INGLÊS, 1 por
     }
   }
   throw new Error(`generateContent: JSON inválido após ${MAX_CONTENT_TRIES} tentativas: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`);
+}
+
+// ─── ROTEIRO DO REEL (crítica + roteiro + legenda numa geração só) ────────────
+// Ordem do dono (31/07/2026): notícia → crítica na voz → roteiro → voz → legenda.
+// Uma chamada só de propósito: se a crítica fosse escrita primeiro e picada em
+// cenas depois, o roteiro viraria RESUMO e a voz se perderia na tradução entre as
+// etapas — que é exatamente o defeito do Reel antigo (copy do carrossel fatiada).
+
+export interface ReelScript {
+  roteiro: ReelRoteiro;
+  critica: string;   // texto corrido na voz (base da legenda e do arquivo do post)
+  legenda: string;   // legenda do Instagram
+  tags: string[];
+}
+
+async function generateReelScript(
+  news: NewsItem,
+  searchResults: SearchResult[],
+  slot: Slot,
+  lang: Lang,
+  automation: Automation,
+  reforco?: string, // instrução extra quando a 1ª tentativa não cobriu o caso
+): Promise<ReelScript> {
+  const acc = accountFor(lang);
+  const L = acc.langName;
+  const context = searchResults.map((r, i) => `[${i + 1}] ${r.title}\n${r.content}`).join("\n\n");
+  const marketSection = acc.marketBrief
+    ? `\nMERCADO / VOZ NATIVA — LEIA ANTES DE TUDO (vale mais que qualquer exemplo abaixo):\n${acc.marketBrief}\n`
+    : "";
+
+  const prompt = `Você é o editor de "${acc.brand}" (${acc.handle}), uma página brasileira de CRÍTICA POLÍTICA LIBERTÁRIA, ANTI-CASTA E APARTIDÁRIA. NÃO é sátira: o objetivo não é fazer rir, é fazer o leitor ENCARAR o que está sendo feito com o dinheiro e a vida dele.
+
+IMPORTANTE — IDIOMA: gere ABSOLUTAMENTE TODA a saída em ${L}. NÃO misture idiomas.
+${marketSection}
+NOTÍCIA DE HOJE (manchete real do noticiário) — É SOBRE ISTO QUE VOCÊ VAI ESCREVER:
+"${news.headline}"
+
+${SLOT_INSTRUCTIONS[slot]}
+
+O QUE VOCÊ ESTÁ PRODUZINDO: o roteiro FALADO de um Reel de ~${FALA_MAX_SEG} segundos. Uma pessoa vai LER ISSO EM VOZ ALTA e cada bloco é uma cena do vídeo. Então: frases CURTAS, faladas, sem oração subordinada, sem vírgula pra respirar. Se a frase não cabe num fôlego, ela está errada.
+
+AS 5 CENAS (cada uma tem um papel; não troque a ordem nem misture os papéis):
+1. GANCHO (máx ${CAP.gancho} chars) — o caso em UMA frase, já com o órgão/instituição e o número. Trava o dedo em 1 segundo. NADA de aquecimento, nada de tese genérica.
+2. FATO (máx ${CAP.fato} chars) — o que aconteceu, com o dado citável. Quem lê tem de RECONHECER a notícia.
+3. MECANISMO (máx ${CAP.mecanismo} chars) — por que isso NÃO é exceção: é o padrão de sempre (a casta que se serve, o Estado que gasta o que é seu).
+4. ESPELHO (máx ${CAP.espelho} chars) — OBRIGATÓRIA. A conta volta pro leitor: ele paga, aceita calado, se acostuma e ainda agradece. Sem esta cena isto vira jornal.
+5. PERGUNTA (máx ${CAP.pergunta} chars) — a pergunta do dia, que abre debate no comentário.
+
+REGRAS DA CRÍTICA (invioláveis):
+- CITE o órgão/instituição, a quantia em R$ e o que aconteceu. Sem isso o post é invisível e podia ser de qualquer dia.
+- NUNCA cite nome de pessoa, partido ou sigla partidária, e nunca torça por um lado. Escreva "o ministro", "a excelência", "o deputado", "o partido da vez". A casta é UMA, esquerda e direita.
+- NÃO faça piada, trocadilho ou deboche. A ironia só entra se ela JÁ ESTIVER NO FATO (quem devia fiscalizar é quem se serviu) — e aí basta mostrar.
+- O leitor NÃO é crítico nem indignado: ele é rebanho, aceita tudo calado. Nunca escreva como se ele já tivesse enxergado o golpe.
+- CAIXA NORMAL de frase (só a inicial maiúscula). Nunca Title Case, nunca TUDO MAIÚSCULO — a tela já sobe pra maiúsculas sozinha.
+${reforco ? `\nATENÇÃO — A TENTATIVA ANTERIOR FALHOU: ${reforco}\n` : ""}
+Contexto pesquisado (apoio, pode ignorar se não ajudar):
+${context}
+
+Gere um JSON válido (sem markdown, sem crases) com esta estrutura EXATA:
+{
+  "gancho": "cena 1, máx ${CAP.gancho} chars",
+  "fato": "cena 2, máx ${CAP.fato} chars",
+  "mecanismo": "cena 3, máx ${CAP.mecanismo} chars",
+  "espelho": "cena 4, máx ${CAP.espelho} chars",
+  "pergunta": "cena 5, máx ${CAP.pergunta} chars",
+  "critica": "a crítica em texto corrido, 120-180 palavras, na MESMA voz — é o desenvolvimento do que o roteiro diz em 5 frases",
+  "legenda": "legenda do Instagram (máx 2200 chars): 1ª linha repete o caso com o órgão e o número, desenvolvimento curto, e fecha com CTA de SEGUIR ${acc.handle} com um motivo na voz da marca (ex.: 'Segue se você prefere a verdade incômoda ao aplauso fácil' — nunca 'siga para mais conteúdo'), salvar (🔖), compartilhar (📩) e 4-5 hashtags",
+  "tags": ["tag1", "tag2", "tag3", "tag4"]
+}`;
+
+  const MAX_TRIES = 2;
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY!,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2048,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    if (!res.ok) throw new Error(`Claude API error: ${res.status}`);
+    const data = await res.json();
+    await logSpend({ automation, platform: "anthropic", operation: "reel-script", model: "claude-haiku-4-5-20251001", units: (data?.usage?.input_tokens ?? 0) + (data?.usage?.output_tokens ?? 0), costUsd: anthropicCost("claude-haiku-4-5-20251001", data?.usage) });
+    try {
+      const raw = parseContentJson<Record<string, unknown>>(data.content?.[0]?.text ?? "");
+      const roteiro = normalizaRoteiro(raw);
+      if (!roteiro) throw new Error("roteiro incompleto (falta gancho, espelho ou pergunta)");
+      return {
+        roteiro,
+        critica: String(raw.critica ?? ""),
+        legenda: String(raw.legenda ?? ""),
+        tags: Array.isArray(raw.tags) ? (raw.tags as string[]) : [],
+      };
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw new Error(`generateReelScript: saída inválida após ${MAX_TRIES} tentativas: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`);
 }
 
 // ─── Token do Instagram ───────────────────────────────────────────────────────
@@ -464,8 +575,7 @@ export async function GET(req: NextRequest) {
     const r = runs[0];
     const slot = SLOT_FOR_RUN[r];
     const now = new Date();
-    const topic = topicOverride ?? await getFreshTopicForRun(now, r, lang);
-    const cat = TOPIC_CAT[topic] ?? "freedom";
+    const day = dayUTC(now);
 
     // Teto: o preview é o pipeline do Reel diário.
     const gate = await checkBudget("ig-reels", EST_RUN_COST.preview);
@@ -473,30 +583,106 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ blocked: true, automation: "ig-reels", reason: `Orçamento diário estourado (gasto US$${gate.spent.toFixed(3)} + est US$${gate.est.toFixed(3)} > teto US$${gate.budget.toFixed(2)})`, gate }, { status: 402 });
     }
 
-    // Base LÍNGUA-INDEPENDENTE compartilhada entre ES e PT (= MESMO vídeo): a
-    // pesquisa (Wikipedia) e o footage (Pexels) são resolvidos UMA vez por (tópico,
-    // dia) e cacheados; o 2º idioma reusa tudo. Só a COPY muda por idioma.
-    const day = dayUTC();
-    const shared = await readReelShared(topic, day);
+    // ── ETAPA 1+2 — BUSCAR A NOTÍCIA e ESCOLHER QUAL ───────────────────────────
+    // O Reel SEMPRE nasce do noticiário (usaPautaNoFormato). A escolha é
+    // determinística por (dia, run) e pula o que já foi usado: pelos Reels dos
+    // últimos dias (livro-razão) e pelos runs ANTERIORES de hoje (threading, mesma
+    // técnica da rotação de temas) → 3 escândalos DISTINTOS por dia.
+    const pautaLog: Record<string, unknown> = {};
+    let news: NewsItem | null = null;
+    if (!topicOverride && usaPautaNoFormato("reel")) {
+      const usados = new Set<string>();
+      try {
+        for (const t of await recentTopicsAllLangs(7)) {
+          if (t.startsWith(NEWS_PREFIX)) usados.add(t.slice(NEWS_PREFIX.length));
+        }
+      } catch { /* fail-open: sem histórico, só o threading do dia */ }
+      for (let i = 0; i < r; i++) {
+        const anterior = pickNewsTopic(hashStr(`${day}|${i}`), usados);
+        if (anterior) usados.add(newsSlug(anterior.headline));
+      }
+      news = pickNewsTopic(hashStr(`${day}|${r}`), usados);
+      pautaLog.pauta = news ? news.headline : "(pauta vazia)";
+    }
 
-    // Pesquisa: reusa a do cache ou busca agora (Wikipedia, grátis e fail-open).
-    const searchResults = shared?.research?.length ? shared.research : await searchTopic(topic, "ig-reels");
+    // O ASSUNTO do Reel é o caso; o pilar (cat) é a LENTE com que ele é lido.
+    // Sem notícia (pauta vazia ou ?topic=), cai no tema perene — comportamento antigo.
+    const topic = topicOverride ?? (news ? `${NEWS_PREFIX}${newsSlug(news.headline)}` : await getFreshTopicForRun(now, r, lang));
+    const cat = news?.cat ?? TOPIC_CAT[topic] ?? "freedom";
+
+    // Base LÍNGUA-INDEPENDENTE compartilhada entre ES e PT (= MESMO vídeo): a
+    // pesquisa e o footage são resolvidos UMA vez por (tópico, dia) e cacheados.
+    const shared = await readReelShared(topic, day);
+    const searchResults = shared?.research?.length ? shared.research : await searchTopic(news?.headline ?? topic, "ig-reels");
+
     // Copy: reusa o cache por (tópico, dia, idioma) → redisparo NÃO repaga a Anthropic.
     let content = (await readContentCache(topic, day, lang)) as GeneratedContent | null;
     if (!content) {
-      // PAUTA QUENTE no REEL — mesma regra dos carrosséis (TRABALHO.md, bloco `pauta:`):
-      // 3 das 4 publicações do dia nascem de uma manchete real usada como GATILHO do
-      // padrão; a 1ª do dia (slot "manha") fica atemporal. Sem pauta no arquivo,
-      // pickNewsTopic devolve null e o run cai no tema fixo (fail-open).
-      const news = usaPautaNoSlot(slot) ? pickNewsTopic(hashStr(`${day}|${r}`)) : null;
-      content = await generateContent(topic, searchResults, slot, lang, "ig-reels", news?.headline);
-      // GUARDA anti-vazamento (backstop de código da régua apartidária): se a copy
-      // citou nome/sigla/cargo/instituição, REFAZ sem a notícia.
-      if (news && copyLeaksName([content.postTitle, ...(content.slides || []), content.cta, content.instagramCaption])) {
-        content = await generateContent(topic, searchResults, slot, lang, "ig-reels");
+      // ── ETAPA 3+4 — A CRÍTICA NA VOZ, JÁ EM FORMA DE ROTEIRO ────────────────
+      // Uma geração só (crítica + roteiro + legenda). Depois: sanitiza nomes,
+      // confere a régua apartidária e — o que NUNCA existiu — confere que a
+      // crítica é MESMO sobre o caso (checagem POSITIVA). Sem ela, o caminho de
+      // menor resistência do sistema era sair sem notícia e ninguém via.
+      const tentarComNoticia = async (n: NewsItem): Promise<ReelScript | null> => {
+        const allow = entidadesPermitidas(n.headline);
+        let reforco: string | undefined;
+        for (let tentativa = 1; tentativa <= 2; tentativa++) {
+          const s = await generateReelScript(n, searchResults, slot, lang, "ig-reels", reforco);
+          // SANITIZA antes de julgar: "o ministro Fulano" → "o ministro". Antes, um
+          // nome escapando no meio de uma copy boa fazia o post inteiro ser refeito
+          // SEM a notícia — e o Reel saía atemporal.
+          const limpo: ReelScript = {
+            roteiro: Object.fromEntries(
+              Object.entries(s.roteiro).map(([k, v]) => [k, sanitizeNomesDePessoa(v)]),
+            ) as unknown as ReelRoteiro,
+            critica: sanitizeNomesDePessoa(s.critica),
+            legenda: sanitizeNomesDePessoa(s.legenda),
+            tags: s.tags,
+          };
+          const campos = [...Object.values(limpo.roteiro), limpo.critica, limpo.legenda];
+          if (copyLeaksName(campos, allow)) {
+            pautaLog.guarda = `tentativa ${tentativa}: vazou nome/partido`;
+            reforco = "a saída citou nome de pessoa ou partido. Reescreva SEM nenhum nome próprio de pessoa e sem sigla partidária — use o cargo genérico ('o ministro', 'o relator').";
+            continue;
+          }
+          if (!copyCobreCaso(campos, n.headline)) {
+            pautaLog.cobertura = `tentativa ${tentativa}: a crítica não citou o caso`;
+            reforco = `a saída não deixou claro DE QUE CASO se trata. Cite explicitamente o órgão/instituição e a quantia em R$ da manchete no gancho e no fato.`;
+            continue;
+          }
+          pautaLog.newsFront = true;
+          return limpo;
+        }
+        return null;
+      };
+
+      let script: ReelScript | null = null;
+      if (news) script = await tentarComNoticia(news);
+
+      if (script) {
+        const fala = montarFala(script.roteiro);
+        if (fala.cortadas.length) pautaLog.corte = `teto de ${FALA_MAX_SEG}s cortou: ${fala.cortadas.join(", ")}`;
+        content = {
+          postTitle: fala.title,
+          postBody: script.critica,
+          slides: fala.slides,
+          cta: fala.cta,
+          instagramCaption: script.legenda,
+          tags: script.tags,
+          videoQueries: [],
+        };
+      } else {
+        // ÚLTIMO RECURSO: sem pauta utilizável, o Reel sai do tema perene (é o
+        // comportamento antigo). Fica REGISTRADO — antes isso acontecia calado e
+        // era a razão de o Reel "nunca sair com a notícia".
+        pautaLog.fallback = news ? "notícia descartada 2× (guarda/cobertura) → tema perene" : "sem pauta → tema perene";
+        console.warn(`[pauta] REEL run=${r} caiu no tema perene: ${pautaLog.fallback}`);
+        const temaPerene = news ? await getFreshTopicForRun(now, r, lang) : topic;
+        content = await generateContent(temaPerene, searchResults, slot, lang, "ig-reels");
       }
       await writeContentCache(topic, day, lang, content);
     }
+    console.log(`[pauta] REEL run=${r} topic="${topic}" ${JSON.stringify(pautaLog)}`);
 
     // videoQueries CANÔNICOS (inglês, língua-independente): do cache (1º idioma)
     // ou os recém-gerados. Garantem o mesmo footage entre os idiomas.
@@ -562,29 +748,21 @@ export async function GET(req: NextRequest) {
     // comprido (no DR um Reel saiu com 32s). A correção é encurtar o TEXTO,
     // nunca acelerar a voz — corta o último insight enquanto não couber, num
     // lugar só (a mesma lista vira o roteiro falado E os slides da tela).
-    const CHARS_POR_SEG = 11.6;  // ritmo medido da voz
-    const FALA_MAX_SEG = 20;     // ~21s de vídeo com o respiro
-    const TETO_CHARS = Math.round(FALA_MAX_SEG * CHARS_POR_SEG);
-    const spokenSlides = dedupeSlides(content.postTitle, content.slides).slice(0, 3);
-    const tamanhoRoteiro = (ss: string[]) => [content.postTitle, ...ss].join(" ").length;
-    while (spokenSlides.length > 1 && tamanhoRoteiro(spokenSlides) > TETO_CHARS) {
-      spokenSlides.pop();
-    }
-    // Blocos do roteiro NA ORDEM falada — o render usa esta MESMA lista pra saber
-    // onde cada cena começa (fonte única do alinhamento voz↔tela).
-    // FECHO FALADO (ordem do dono 29/07, depois de ouvir o reel das 19:47: "deveríamos
-    // incluir o finalzinho"): a voz fecha com a pergunta do dia + "Siga o perfil." —
-    // o MESMO pedido que o card final mostra (voz = tela; um pedido só). Sem falar o
-    // @handle (era o que embolava a voz no DR). A cena final começa quando a voz
-    // começa o fecho — mesma mecânica das outras cenas, nada é espremido.
-    // Frase do fecho trocada 29/07 à noite (dono: "'Siga o perfil' ficou meio
-    // estranho... tinha que ser mais chamativa"): fala o NOME da página e amarra
-    // com a tese (cada dia tem escândalo novo).
-    const fechoFalado = [content.cta, "Segue o Um País de Merda — amanhã o escândalo é outro."].map((s) => String(s || "").trim()).filter(Boolean).join(" ");
-    const narrationSegments = [content.postTitle, ...spokenSlides, fechoFalado]
-      .map((s) => String(s).trim()).filter(Boolean)
-      .map((s) => (/[.!?]$/.test(s) ? s : s + "."));
+    // Regra e números agora vivem em src/lib/reel-script.ts (fonte única, testada).
+    // FECHO FALADO (ordem do dono 29/07): a voz fecha com a pergunta do dia + a
+    // frase da marca — o MESMO pedido que o card final mostra (voz = tela).
+    // CORREÇÃO 31/07: o fecho agora CONTA no teto. Ele era montado DEPOIS da conta,
+    // então a fala real passava de 33s e o corte derrubava o 3º insight — justamente
+    // onde mora o espelho. Ver montarFalaDeCopy.
+    const fala = montarFalaDeCopy(
+      content.postTitle,
+      dedupeSlides(content.postTitle, content.slides).slice(0, 3),
+      content.cta,
+    );
+    const spokenSlides = fala.slides;
+    const narrationSegments = fala.segments;
     const narrationText = narrationSegments.join(" ");
+    console.log(`[reel] fala=${fala.chars} chars ≈ ${duracaoEstimadaSeg(fala.chars)}s (teto ${TETO_CHARS})${fala.cortadas.length ? ` — cortado: ${fala.cortadas.length}` : ""}`);
     // SEM janela-alvo: a voz sai em velocidade natural e o VÍDEO se ajusta a ela.
     const narr = await generateNarration(narrationText, lang, topic, day, { automation: "ig-reels", meta: { run: r } });
 
@@ -605,6 +783,11 @@ export async function GET(req: NextRequest) {
       videoQueries, // canônicos (compartilhados entre idiomas)
       clips,        // footage COMPARTILHADO (mesmo vídeo ES/PT); [] → fetch-footage.mjs busca no CI
       sharedFootage: clips.length > 0, // diagnóstico: veio da base compartilhada?
+      // DIAGNÓSTICO DA PAUTA — antes não havia NENHUM sinal de que a notícia tinha
+      // entrado (ou sido descartada), e por isso o Reel saía atemporal sem ninguém ver.
+      pauta: pautaLog.pauta ?? null,
+      newsFront: pautaLog.newsFront === true,
+      newsGuard: pautaLog.guarda ?? pautaLog.cobertura ?? pautaLog.fallback ?? null,
       narrationUrl: narr.url ?? undefined, // voz TTS (gated REEL_NARRATION_ENABLED); ausente → Reel mudo
       // A MEDIDA da voz — dimensiona o vídeo e trava a legenda (o áudio é o
       // relógio). Ausentes → o render cai na fórmula de slides, sem regressão.
@@ -655,6 +838,11 @@ export async function GET(req: NextRequest) {
             if (existing.rows.length > 0) {
               slotLog.skipped = true;
               slotLog.reason = "Tópico já publicado nesta conta nos últimos 7 dias";
+              // O `results.push` FALTAVA aqui (corrigido 31/07/2026): este era o único
+              // desvio do loop que sumia sem deixar rastro — a resposta voltava
+              // {"ok":true,"posts":[]} e o workflow ficava verde. Foi assim que o
+              // carrossel parou de sair sem ninguém perceber.
+              results.push(slotLog);
               continue;
             }
           } catch { /* ignora erro de banco */ }
@@ -676,17 +864,16 @@ export async function GET(req: NextRequest) {
         let content = (await readContentCache(topic, dayUTC(now), lang)) as GeneratedContent | null;
         if (!content) {
           const searchResults = await searchTopic(topic, "ig-posts");
-          // 2ª FRENTE (corrupção da semana): no slot "noite", puxa uma manchete real
-          // como GATILHO do padrão (apartidário; a régua + a guarda abaixo protegem).
-          const news = usaPautaNoSlot(slot) ? pickNewsTopic(hashStr(`${dayUTC(now)}|${runIndex}`)) : null;
-          content = await generateContent(topic, searchResults, slot, lang, "ig-posts", news?.headline);
-          // GUARDA anti-vazamento: se a copy citou nome/partido/instituição/sigla,
-          // REFAZ sem a notícia (tema fixo puro). Backstop de código da régua.
-          if (news && copyLeaksName([content.postTitle, ...(content.slides || []), content.cta, content.instagramCaption])) {
-            slotLog.newsGuard = "descartou notícia (vazou nome) → tema fixo";
+          // O CARROSSEL é a espinha ATEMPORAL (usaPautaNoFormato("carrossel") = false):
+          // servidão voluntária, o formato que se salva e se relê. Quem carrega o
+          // escândalo do dia são os 3 Reels. Antes a regra era por SLOT e, na grade de
+          // 29/07, ela invertia os papéis — a pauta ia parar no único carrossel e a
+          // espinha atemporal num Reel.
+          content = await generateContent(topic, searchResults, slot, lang, "ig-posts");
+          // Backstop da régua apartidária: mesmo sem notícia, nada de nome/partido.
+          if (copyLeaksName([content.postTitle, ...(content.slides || []), content.cta, content.instagramCaption])) {
+            slotLog.newsGuard = "copy citou nome/partido → regerada";
             content = await generateContent(topic, searchResults, slot, lang, "ig-posts");
-          } else if (news) {
-            slotLog.newsFront = true;
           }
           await writeContentCache(topic, dayUTC(now), lang, content);
         }
