@@ -1,0 +1,74 @@
+{
+  "versao": 1,
+  "atualizadoEm": "2026-08-09",
+  "_doc": "FONTE ÚNICA dos esqueletos de peça. Quem precisa de cópia (repositório que roda na nuvem e não enxerga .claude/) recebe ESPELHO verificado por .claude/lib/peca/verificar-espelho.mjs. Editar a cópia não adianta: edite aqui e espelhe.",
+  "_origem": "8 aulas públicas da referência de Instagram + os 8 perfis que ela cita, medidos em 09/08/2026. Estudo em .claude/marca/dr-libertad/BIBLIOTECA-FORMATOS.md §2.2; levantamento em Meus Projetos/Crescimento/DOSSIE-UNICO-Hanah-2026-08-09.html.",
+  "_foraDeProposito": "Os formatos que exigiriam rosto (dinamismo, diálogo, telepatia, conversa de bar, the office) estão FORA por trava do dono: ele não aparece.",
+  "_naoViaja": "O TÍTULO-MOLDE não está aqui de propósito. Ele é régua MEDIDA NO INSTAGRAM e mora no motor do Instagram (src/lib/formatos-peca.ts). O que este arquivo carrega é a ARQUITETURA (esqueleto + conflito antes da tese), que é o que se replica. Ver .claude/marca/dr-libertad/REGRAS-POR-PLATAFORMA.md.",
+
+  "formatos": [
+    {
+      "id": "palestrinha",
+      "nome": "Palestrinha",
+      "midia": ["carrossel", "reel", "texto"],
+      "roteiro": "Estruture como uma MINI-PALESTRA de uma ideia só: abre nomeando o conflito, desenvolve UM argumento em três passos encadeados (cada tela puxa a seguinte) e fecha com a virada. Nada de lista solta — é raciocínio contínuo, como quem convence alguém numa conversa."
+    },
+    {
+      "id": "narrado",
+      "nome": "Narrado",
+      "midia": ["reel"],
+      "roteiro": "Escreva para ser OUVIDO: frases curtas, sujeito antes do verbo, zero subordinada longa. O texto na tela repete só a palavra-chave de cada frase, nunca a frase inteira. Abre nomeando o conflito em voz alta."
+    },
+    {
+      "id": "analogia",
+      "nome": "Analogia",
+      "midia": ["carrossel", "reel", "texto"],
+      "roteiro": "Ancore a ideia numa IMAGEM CONCRETA do mundo físico (a gaiola sem grade, a corrente de ouro, a porta destrancada) e mantenha essa mesma imagem até o fim — a cada tela ela avança um passo. Proibido trocar de metáfora no meio."
+    },
+    {
+      "id": "comparacao",
+      "nome": "Comparação",
+      "midia": ["carrossel", "reel", "texto"],
+      "roteiro": "Monte em DOIS LADOS: o que a pessoa faz hoje × o que fazer. Cada tela é um par (isto × aquilo), sempre na mesma ordem. A antítese é a espinha da peça, não um enfeite no fim."
+    },
+    {
+      "id": "polemica",
+      "nome": "Polêmica",
+      "midia": ["carrossel", "reel", "texto"],
+      "roteiro": "Abra com a afirmação que a maioria vai querer contestar — a tese incômoda, dita sem rodeio na primeira tela. As telas seguintes SUSTENTAM com argumento, não recuam. Provoca pela IDEIA, nunca por desprezo a pessoas ou grupos."
+    },
+    {
+      "id": "caixinha-polemica",
+      "nome": "Caixinha polêmica",
+      "midia": ["carrossel", "reel", "texto"],
+      "roteiro": "Abra citando a objeção mais comum contra a tese, entre aspas, como se fosse um comentário recebido. Depois responda a ela ponto a ponto. O conflito já vem embutido na citação."
+    },
+    {
+      "id": "tela-verde",
+      "nome": "Tela verde",
+      "midia": ["reel"],
+      "roteiro": "A peça comenta um FATO EXTERNO (um dado, uma manchete, um número) que aparece atrás do texto. Abre com o fato, nomeia por que ele incomoda e vira para a tese da marca."
+    }
+  ],
+
+  "conflito": {
+    "titulo": "CONFLITO ANTES DA TESE (regra dura, vale para qualquer formato):",
+    "linhas": [
+      "A PRIMEIRA tela nomeia a DOR que o leitor já sente — em segunda pessoa, no presente, uma",
+      "situação concreta que ele reconhece em si. Só a partir da segunda tela vem a tese.",
+      "Abrir com a conclusão é responder a uma pergunta que ninguém fez: a peça é descartada no dedo.",
+      "O conflito NÃO é uma pergunta retórica genérica — é o atrito específico deste tema."
+    ]
+  },
+
+  "conflitoTextoCorrido": {
+    "titulo": "CONFLITO ANTES DA TESE (regra dura, vale para qualquer formato):",
+    "_quando": "Redes de texto puro (X, Threads, LinkedIn): não há 'telas', há a primeira LINHA.",
+    "linhas": [
+      "A PRIMEIRA linha nomeia a DOR que o leitor já sente — em segunda pessoa, no presente, uma",
+      "situação concreta que ele reconhece em si. Só depois dela vem a tese.",
+      "Abrir com a conclusão é responder a uma pergunta que ninguém fez: o dedo desliza.",
+      "O conflito NÃO é uma pergunta retórica genérica — é o atrito específico deste tema."
+    ]
+  }
+}
