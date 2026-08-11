@@ -14,6 +14,8 @@ import { searchDuckDuckGo } from "@/lib/ddg";
 import { buildLiteralDirective } from "@/lib/literal-lock";
 import { formatoDaVaga, diretrizDoRedator } from "@/lib/formatos-nucleo";
 import { generateNarration } from "@/lib/narration";
+import { paraFalar } from "@/lib/fala";
+import { assinarLegenda } from "@/lib/serie";
 import { dedupeSlides } from "@/lib/slide-dedup";
 
 // Aumenta o limite de execução para 60s (Vercel Hobby permite até 300s)
@@ -612,6 +614,13 @@ export async function GET(req: NextRequest) {
     const fechoFalado = [content.cta, "Segue o Um País de Merda — amanhã o escândalo é outro."].map((s) => String(s || "").trim()).filter(Boolean).join(" ");
     const narrationSegments = [content.postTitle, ...spokenSlides, fechoFalado]
       .map((s) => String(s).trim()).filter(Boolean)
+      // ⛔ 2026-08-11 — TELA E BOCA SÃO TEXTOS DIFERENTES. Portado do Dr. Liberdade, onde o
+      // dono ouviu a peça e disse: *"a palavra (20 min) corta a palavra e fica estranho,
+      // não existe 20 min falado"*. O bloco ia CRU para o motor de voz, então "scrolla
+      // 20 min" era lido como está escrito. Na tela "20 min" é bom (curto, cabe); na boca é
+      // "vinte minutos". Só o roteiro FALADO passa por aqui — `slides`/`title`, que são o
+      // que aparece na tela, continuam saindo exatamente como o redator escreveu.
+      .map((s) => paraFalar(s))
       .map((s) => (/[.!?]$/.test(s) ? s : s + "."));
     const narrationText = narrationSegments.join(" ");
     // SEM janela-alvo: a voz sai em velocidade natural e o VÍDEO se ajusta a ela.
@@ -630,6 +639,11 @@ export async function GET(req: NextRequest) {
       accentWords: [],
       cta: content.cta,
       caption: content.instagramCaption,
+      // O ESQUELETO com que esta peça foi escrita — segue para o `/api/publish-reel`, que
+      // o grava no livro-razão. É a metade que faltava para o `/api/placar` saber qual
+      // formato gerou qual publicação (o Reel é 3 das 4 peças do dia: sem isto o placar
+      // enxergaria só o carrossel).
+      formato: content.formato ?? null,
       kw, ed,
       videoQueries, // canônicos (compartilhados entre idiomas)
       clips,        // footage COMPARTILHADO (mesmo vídeo ES/PT); [] → fetch-footage.mjs busca no CI
@@ -766,7 +780,11 @@ export async function GET(req: NextRequest) {
         // Publicar carrossel
         let instagramPostId: string | null = null;
         try {
-          instagramPostId = await publishCarousel(content.instagramCaption, slideUrls, lang);
+          // ASSINATURA FIXA abrindo a legenda (ver `src/lib/serie.ts`): o sinal da marca
+          // repetido peça após peça é o que faz a conta ser reconhecida antes de ser lida.
+          // Enquanto o sinal desta marca não estiver escolhido, `assinarLegenda` devolve a
+          // legenda como veio — fail-open, nenhuma peça deixa de sair por causa disso.
+          instagramPostId = await publishCarousel(assinarLegenda(content.instagramCaption), slideUrls, lang);
           slotLog.instagramPostId = instagramPostId;
           slotLog.slides = slideUrls.length;
         } catch (igErr) {
@@ -786,7 +804,7 @@ export async function GET(req: NextRequest) {
         });
 
         // Livro-razão (dia,run,lang) p/ o watchdog — só conta como publicado se saiu.
-        if (instagramPostId) await recordRun(dayUTC(now), runIndex, lang, "carousel", instagramPostId, topic);
+        if (instagramPostId) await recordRun(dayUTC(now), runIndex, lang, "carousel", instagramPostId, topic, content.formato ?? null);
 
         slotLog.ok = true;
       } catch (slotErr) {

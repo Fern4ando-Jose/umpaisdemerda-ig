@@ -69,6 +69,11 @@ export async function runAlreadyPublished(day: string, run: number, lang: string
 export async function recordRun(
   day: string, run: number, lang: string, kind: string, instagramPostId: string | null,
   topic?: string | null,
+  // O ESQUELETO com que a peça foi escrita (2026-08-11). A biblioteca de formatos existe
+  // para ser podada por desempenho — *"formato que não performa é descartado, não
+  // melhorado"* — e isso exige saber qual formato gerou qual publicação. É o que o
+  // `/api/placar` mede.
+  formato?: string | null,
 ): Promise<void> {
   try {
     const { sql } = await import("@vercel/postgres");
@@ -79,6 +84,15 @@ export async function recordRun(
         kind = ${kind}, instagram_post_id = ${instagramPostId},
         topic = COALESCE(${topic ?? null}, published_runs.topic), ts = NOW()
     `;
+    // Query SEPARADA de propósito: enquanto a coluna `formato` não existir no banco (a
+    // migração roda por `/api/migrate`), esta falha sozinha e o registro da publicação —
+    // que é o que segura a trava anti-duplicata — já está gravado. Junto, um banco
+    // pré-migração derrubaria o livro-razão inteiro por causa do placar.
+    if (formato) {
+      try {
+        await sql`UPDATE published_runs SET formato = ${formato} WHERE day = ${day} AND run = ${run} AND lang = ${lang}`;
+      } catch { /* pré-migração: sem coluna, sem placar por formato — nada mais quebra */ }
+    }
   } catch { /* livro-razão é best-effort — nunca quebra o pipeline */ }
 }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Lang, accountFor, getLang } from "@/lib/accounts";
 import { dayUTC, runAlreadyPublished, recordRun } from "@/lib/run-ledger";
+import { assinarLegenda } from "@/lib/serie";
 
 // Publicação de REELS (vídeo) no @umpaisdemerda via Instagram Graph API v25.
 // O vídeo já precisa estar hospedado em URL pública (ex.: Vercel Blob).
@@ -118,14 +119,18 @@ async function handle(req: NextRequest) {
   const runParam = params.get("run");      // 0..3 — p/ o livro-razão/dedup do watchdog
   const run = runParam !== null && runParam !== "" ? parseInt(runParam, 10) : null;
   let topic = params.get("topic") ?? "";   // tópico do Reel → livro-razão (anti-dup cross-formato)
+  // O ESQUELETO com que a peça foi escrita (vem do preview, pelo workflow). Ausente → o
+  // livro-razão grava sem formato e o placar simplesmente não conta esta peça; nada quebra.
+  let formato = params.get("formato") ?? "";
   const day = dayUTC();
 
-  if ((!video || !caption || !topic) && req.method === "POST") {
+  if ((!video || !caption || !topic || !formato) && req.method === "POST") {
     try {
       const body = await req.json();
       video = video || body.video || "";
       caption = caption || body.caption || "";
       topic = topic || body.topic || "";
+      formato = formato || body.formato || "";
     } catch {
       /* sem body JSON — segue com o que veio da query */
     }
@@ -144,12 +149,14 @@ async function handle(req: NextRequest) {
   }
 
   try {
-    const postId = await publishReel(video, caption || "", lang);
+    // ASSINATURA FIXA abrindo a legenda (ver `src/lib/serie.ts`) — o mesmo sinal que o
+    // carrossel usa. Sem sinal escolhido, devolve a legenda como veio (fail-open).
+    const postId = await publishReel(video, assinarLegenda(caption || ""), lang);
     log.postId = postId;
     log.ok = true;
     // Livro-razão p/ o watchdog + anti-dup cross-formato (grava o tópico).
     // run 3 = Reel clássico; 0..2 = Reel footage.
-    if (run !== null && Number.isFinite(run)) await recordRun(day, run, lang, run === 3 ? "reel-classic" : "reel", postId, topic || null);
+    if (run !== null && Number.isFinite(run)) await recordRun(day, run, lang, run === 3 ? "reel-classic" : "reel", postId, topic || null, formato || null);
     return NextResponse.json({ ok: true, postId, log });
   } catch (err) {
     console.error("[publish-reel] erro:", err);

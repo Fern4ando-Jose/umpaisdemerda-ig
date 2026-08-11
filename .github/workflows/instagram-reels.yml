@@ -137,6 +137,7 @@ jobs:
             fs.writeFileSync("caption.txt", p.caption || p.title || "");
             fs.writeFileSync("slot.txt", p.slot || "noite");
             fs.writeFileSync("topic.txt", p.topic || ""); // → publish-reel (anti-dup cross-formato)
+            fs.writeFileSync("formato.txt", p.formato || ""); // → publish-reel (placar por formato)
             fs.writeFileSync("reel-props.json", JSON.stringify(props));
             console.log("REEL_PROPS montado (run", "'"${{ steps.params.outputs.run }}"'", "):", JSON.stringify(props).slice(0, 280));
           '
@@ -224,6 +225,7 @@ jobs:
             --data-urlencode "slot=$(cat slot.txt)" \
             --data-urlencode "run=${{ steps.params.outputs.run }}" \
             --data-urlencode "topic@topic.txt" \
+            --data-urlencode "formato@formato.txt" \
             "${{ secrets.SITE_URL }}/api/publish-reel")
           echo "Resposta do servidor:"
           echo "$RESP"
