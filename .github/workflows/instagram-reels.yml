@@ -15,9 +15,12 @@ on:
   # QA visual foto-a-foto aprovada. Cadência = 2 reels/dia (runs 0 e 1). O run 2
   # (21:17) segue desligado — a cadência acordada é 2 carrosséis + 2 reels/dia.
   schedule:
+    # ⛔ GRADE DE 11/08/2026 — ordem do dono: "vai sair apenas 2 reel diário e um
+    # carrossel". O reel das 17:17 (run 1) foi DESLIGADO; ficaram os dois extremos,
+    # que é o melhor espalhamento do dia. Fonte única da grade: src/lib/run-ledger.ts
+    # (RUN_HOUR_UTC) — mexer aqui sem mexer lá cria vaga fantasma no catch-up.
     - cron: "17 15 * * *" # 12:17 BRT (run 0)
-    - cron: "17 20 * * *" # 17:17 BRT (run 1)
-    # 3º reel LIGADO 29/07/2026 (ordem do dono: "deixa 3 reel e apenas 1 carrossel").
+    # - cron: "17 20 * * *" # 17:17 BRT (run 1) — DESLIGADO 11/08/2026
     # 19:47 BRT e NÃO 21:17: 21:17 BRT = 00:17 do dia seguinte no relógio universal
     # (UTC) — o dia-chave viraria e a trava anti-duplicata/resgate trataria o reel
     # como de OUTRO dia. 19h também é a janela de melhor alcance medida no DR.

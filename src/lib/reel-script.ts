@@ -32,8 +32,20 @@ export const FECHO_FIXO = "Segue o Um País de Merda — amanhã o escândalo é
 // Ritmo medido da voz. O áudio é o relógio: roteiro comprido = vídeo comprido, e a
 // correção é sempre encurtar o TEXTO, nunca acelerar a voz.
 export const CHARS_POR_SEG = 11.6;
-export const FALA_MAX_SEG = 24;
-export const TETO_CHARS = Math.round(FALA_MAX_SEG * CHARS_POR_SEG); // 278
+// ⛔ 2026-08-11 — 24 → 26 s, e o motivo é a EXPANSÃO DA FALA, não vontade de vídeo longo.
+// Desde hoje o teto mede o texto **falado**: "em PE" vira "em Pernambuco" (+8 chars),
+// "R$ 1,3 milhão" vira "1,3 milhão de reais" (+6), "20 min" vira "vinte minutos" (+7).
+// Com o teto antigo a soma dos CAPs por cena (220) mais o fecho (54) deixava **4
+// caracteres** de margem — qualquer valor em reais estourava e o corte comia o MECANISMO.
+// Como a pauta desta conta é orçamento público, isso aconteceria quase todo dia.
+//
+// ⚠️ ESTOU PROPONDO ESTE NÚMERO: 26 s dá ~28 caracteres de folga (2,4 s), que é o pior
+// caso realista de expansão numa peça de 5 cenas. A alternativa era encurtar as frases
+// (baixar os CAPs ~9%) — preferi não mexer no tamanho da copy sem o dono pedir. O Reel
+// real de hoje saiu com 22,6 s, então isto não alonga a peça média: só evita que ela
+// perca uma cena por causa de uma palavra que a voz agora fala por extenso.
+export const FALA_MAX_SEG = 26;
+export const TETO_CHARS = Math.round(FALA_MAX_SEG * CHARS_POR_SEG); // 302
 
 // Ordem de sacrifício quando o roteiro estoura o teto. NUNCA o gancho (é o que
 // segura o dedo), NUNCA o espelho (sem ele a crítica vira jornal), NUNCA a

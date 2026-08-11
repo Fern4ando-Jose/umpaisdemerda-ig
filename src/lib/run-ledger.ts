@@ -22,12 +22,20 @@ export function dayUTC(date = new Date()): string {
 export const ACTIVE_LANGS = ["pt"] as const;
 
 // Hora UTC de cada run AGENDADO (espelha os crons dos workflows). Só entram runs
-// com cron LIGADO. Grade de 29/07/2026 (ordem do dono: "deixa 3 reel e apenas 1
-// carrossel"): reels run 0 (12:17 BRT), 1 (17:17) e 2 (19:47); carrossel run 4
-// (09:17). Runs 5 (2º carrossel) e 3 (reel clássico) DESLIGADOS → NÃO entram
-// aqui, senão o catch-up os ressuscitaria como vaga fantasma. Religar um run =
-// descomentar o cron no workflow E readicionar aqui.
-export const RUN_HOUR_UTC: Record<number, number> = { 0: 15, 1: 20, 2: 22, 4: 12 };
+// com cron LIGADO.
+//
+// ⛔ GRADE DE 11/08/2026 — ordem do dono: *"vai sair apenas 2 reel diário e um
+// carrossel"*. Reels run 0 (12:17 BRT) e 2 (19:47); carrossel run 4 (09:17).
+// Runs DESLIGADOS: 1 (o reel das 17:17, desligado AGORA), 3 (reel clássico) e 5
+// (2º carrossel) → NÃO entram aqui, senão o catch-up os ressuscitaria como vaga
+// fantasma. Religar um run = descomentar o cron no workflow E readicionar aqui.
+//
+// ⚠️ POR QUE FOI O DAS 17:17 QUE SAIU, e não outro: o dono mandou tirar um reel
+// sem dizer qual. Ficaram os dois extremos — almoço e noite —, que é o melhor
+// espalhamento do dia; 19h também é a janela de melhor alcance medida no DR, e
+// 12:17 é o único que já publicou hoje. Cortar o do meio é o que menos muda o
+// alcance. Se ele preferir outro, é trocar o número aqui e o cron no workflow.
+export const RUN_HOUR_UTC: Record<number, number> = { 0: 15, 2: 22, 4: 12 };
 export const GRACE_MIN = 75; // carência após o horário do cron antes de "faltando"
 
 // Runs que já venceram (por agora, UTC) e ainda NÃO publicaram, por idioma ativo.
