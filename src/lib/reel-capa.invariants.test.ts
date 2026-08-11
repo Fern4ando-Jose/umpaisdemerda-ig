@@ -115,6 +115,16 @@ describe("a capa do Reel no grid do Instagram", () => {
     expect(reelV2).toMatch(/\{etiqueta \? \(/);
   });
 
+  it("o destaque casa palavra INTEIRA e nunca palavra curta (peça real de 11/08)", () => {
+    // O primeiro Reel rodado com o motor novo trouxe «25 PRESOS EM OPERAÇÃO CONTRA TRÁFICO
+    // EM PE.» e pintou DUAS palavras de vermelho: a última ("PE.") virava destaque sem trava
+    // de tamanho, e a comparação por PEDAÇO fazia "o**pe**ração" casar também. Meia manchete
+    // acesa não é destaque — é defeito visível no feed.
+    expect(reelV2).not.toMatch(/clean\(w\)\.includes\(accent/);
+    expect(reelV2).toMatch(/a\.length >= 4 && p\.length >= 4/);
+    expect(reelV2).toMatch(/ultima\.length >= 4 \? ultima : ""/);
+  });
+
   it("o Reel usa os acentos vindos da fonte única, não um mapa recriado aqui", () => {
     expect(reelV2).toMatch(/import\s*\{[^}]*CAT_ACCENT[^}]*\}\s*from\s*"\.\/Reel"/);
     expect(reelV2).not.toMatch(/const\s+CAT_ACCENT\s*:/);

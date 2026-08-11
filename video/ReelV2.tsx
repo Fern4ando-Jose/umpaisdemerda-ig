@@ -230,7 +230,13 @@ function KineticText({
         const y = inteiroDeInicio
           ? 0
           : interpolate(frame, [f0, f0 + 7], [18, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-        const isAccent = !!accent && clean(w).includes(accent.toLowerCase());
+        // ⛔ 2026-08-11 — PEDAÇO NÃO BASTA: com `includes`, o destaque "pe" acendia
+        // "o**pe**ração" e meia manchete saía em vermelho na peça real. Casa por PREFIXO e
+        // só a partir de 4 letras — assim "liberdade" ainda pega "liberdades" (plural),
+        // mas duas letras soltas não acendem palavra nenhuma.
+        const a = (accent || "").toLowerCase();
+        const p = clean(w);
+        const isAccent = a.length >= 4 && p.length >= 4 && (p.startsWith(a) || a.startsWith(p));
         // ⛔ 2026-08-11 — A COR NASCE NO QUADRO 0. No DR a palavra-chave ACENDIA entre os
         // frames 6 e 16, para dar movimento à capa agora estática; o dono olhou o primeiro
         // quadro e disse *"no seu texto não tem cor"*. Medido: frame 0 com **0 pixel** na cor
@@ -251,14 +257,30 @@ function KineticText({
 
 // Palavra de realce da CAPA: o kw da marca se aparece no título; senão a última
 // palavra (a "essência" costuma cair no fim da frase). Vai na cor de acento.
+// ⛔ 2026-08-11 — DUAS PALAVRAS SAÍRAM EM VERMELHO NA PEÇA REAL. O primeiro Reel rodado com
+// o motor novo trouxe a manchete «25 PRESOS EM OPERAÇÃO CONTRA TRÁFICO EM PE.» e pintou
+// **"OPERAÇÃO" e "PE."**. A causa: a última palavra virava o destaque sem nenhuma trava de
+// tamanho, e a comparação era por PEDAÇO — com destaque `"pe"`, `"operação"` casa
+// (o-**pe**-ração). Palavra de 1–2 letras acende meia frase.
+//
+// Duas correções, e as duas importam:
+//   · **tamanho mínimo também para a última palavra** (a guarda de 3 letras só existia para
+//     o `kw`) — "PE.", "EM", "DO" nunca viram destaque;
+//   · **casar palavra INTEIRA**, não pedaço. O `kw` continua podendo casar por prefixo
+//     (é assim que "LIBERTAD" acha "liberdade"), mas só a partir de 4 letras, que é onde
+//     prefixo deixa de ser coincidência de letras.
+// Sem destaque adequado, devolve vazio: a frase sai toda branca — o que é correto e limpo,
+// nunca meia frase acesa.
 function pickCoverAccent(title: string, kw: string): string {
   const words = (title || "").split(/\s+/).filter(Boolean);
   const strip = (w: string) => w.toLowerCase().replace(/[^\p{L}]/gu, "");
-  if (kw) {
-    const m = words.find((w) => strip(w).includes(strip(kw)) && strip(kw).length > 2);
-    if (m) return strip(m);
+  const k = strip(kw);
+  if (k.length >= 4) {
+    const m = words.find((w) => strip(w).startsWith(k) || k.startsWith(strip(w)));
+    if (m && strip(m).length >= 4) return strip(m);
   }
-  return strip(words[words.length - 1] || "");
+  const ultima = strip(words[words.length - 1] || "");
+  return ultima.length >= 4 ? ultima : "";
 }
 
 // ─── Capa V2: a frase inteira desde o quadro 0 + identidade de marca ──────────
