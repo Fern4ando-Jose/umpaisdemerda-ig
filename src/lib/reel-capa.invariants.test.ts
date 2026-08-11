@@ -149,17 +149,33 @@ describe("o som da peça (11/08/2026)", () => {
 });
 
 describe("a boca e a tela são textos diferentes (11/08/2026)", () => {
-  it("só o roteiro FALADO passa pelo expansor de abreviação", () => {
+  const script = ler("src", "lib", "reel-script.ts");
+
+  it("o expansor mora na FONTE ÚNICA do roteiro falado, não no chamador", () => {
     // *"não existe 20 min falado"*. Na tela "20 min" é bom; na boca é "vinte minutos".
-    expect(publish).toMatch(/\.map\(\(s\) => paraFalar\(s\)\)/);
-    expect(publish).toMatch(/import \{ paraFalar \} from "@\/lib\/fala"/);
+    // Fica em `reel-script.ts` porque são DOIS caminhos (roteiro de cena e copy pronta) e
+    // pôr no `route.ts` deixaria um deles de fora.
+    expect(script).toMatch(/import \{ paraFalar \} from "\.\/fala"/);
+    expect(publish).not.toMatch(/paraFalar/);
+  });
+
+  it("os DOIS caminhos de montagem falam expandido", () => {
+    const usos = script.match(/\.map\(falado\)/g) ?? [];
+    expect(usos.length, "montarFala e montarFalaDeCopy").toBeGreaterThanOrEqual(2);
   });
 
   it("o texto da TELA continua saindo como o redator escreveu", () => {
-    // Se `paraFalar` encostasse em `slides`/`title`, a tela ganharia "vinte minutos" —
-    // longo, feio e fora da régua de ocupação. O expansor entra só na lista falada.
-    expect(publish).not.toMatch(/slides:.*paraFalar/);
-    expect(publish).not.toMatch(/title: paraFalar/);
+    // Se `paraFalar` encostasse em `title`/`slides`/`cta` do retorno, a tela ganharia
+    // "vinte minutos" — longo e fora da régua de ocupação. Só `segments` passa por lá.
+    expect(script).not.toMatch(/title: falado\(|slides: .*falado|cta: falado\(/);
+  });
+
+  it("a expansão CONTA no teto — senão a fala passa do que foi medido", () => {
+    // Mesmo defeito que a correção de 31/07 consertou (o fecho contava depois da conta):
+    // medir o texto da tela e falar outro, maior, faz o vídeo estourar a duração.
+    expect(script).toMatch(/const tamanhoFalado = /);
+    const totais = script.match(/return tamanhoFalado\(/g) ?? [];
+    expect(totais.length).toBeGreaterThanOrEqual(2);
   });
 });
 

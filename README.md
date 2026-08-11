@@ -1,7 +1,7 @@
 # @umpaisdemerda — automação de Instagram
 
-Backend (Next.js) da automação de Instagram **@umpaisdemerda** — sátira política libertária
-PT-BR, **anti-casta e apartidária**. Gera copy via Claude, renderiza carrossel (`next/og`,
+Backend (Next.js) da automação de Instagram **@umpaisdemerda** — **crítica** política
+libertária PT-BR, **anti-casta e apartidária** (não é sátira: o objetivo não é fazer rir). Gera copy via Claude, renderiza carrossel (`next/og`,
 estilo jornal) e Reel (footage de banco + Remotina), e publica via Instagram Graph API v25,
 com rotação de temas, trava anti-duplicata e teto de gasto.
 

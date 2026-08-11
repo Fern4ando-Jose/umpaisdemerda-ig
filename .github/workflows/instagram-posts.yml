@@ -96,3 +96,10 @@ jobs:
             echo "::error::Falha na publicação (HTTP $HTTP_CODE)"
             exit 1
           fi
+          # VERDE FALSO (corrigido 31/07/2026): {"ok":true,"posts":[]} é HTTP 200 e o
+          # run ficava verde sem ter publicado nada — foi assim que o carrossel parou
+          # de sair sem ninguém ver. Agora avisa (warning, não erro: pular pode ser
+          # legítimo — idempotência, teto de gasto — mas TEM de ficar visível).
+          if grep -q '"posts":\[\]' response.json; then
+            echo "::warning title=Nada publicado::A resposta veio sem nenhum post. Ver o motivo em response.json."
+          fi
