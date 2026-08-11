@@ -20,6 +20,8 @@ export interface ReelRoteiro {
   pergunta: string;   // cena 5 (CTA)   — a pergunta do dia
 }
 
+import { paraFalar } from "./fala";
+
 // Tetos por cena (chars). Somados com o fecho fixo cabem no TETO_CHARS abaixo —
 // um roteiro bem-comportado passa inteiro e o corte nunca precisa disparar.
 export const CAP = { gancho: 45, fato: 45, mecanismo: 45, espelho: 45, pergunta: 40 } as const;
@@ -50,6 +52,22 @@ export interface FalaMontada {
 const limpa = (s: unknown) => String(s ?? "").trim();
 const comPonto = (s: string) => (/[.!?]$/.test(s) ? s : s + ".");
 
+// ⛔ 2026-08-11 — TELA E BOCA SÃO TEXTOS DIFERENTES. Portado do Dr. Liberdade, onde o dono
+// ouviu a peça e disse: *"a palavra (20 min) corta a palavra e fica estranho, não existe
+// 20 min falado"*. O bloco ia CRU para o motor de voz, então "scrolla 20 min" era lido como
+// está escrito. Na tela "20 min" é bom (curto, cabe); na boca é "vinte minutos".
+//
+// Fica AQUI, e não no `route.ts`, porque este arquivo é a fonte única do roteiro falado — os
+// dois caminhos (roteiro de cena e copy pronta) passam por ele, e pôr no chamador deixaria
+// um dos dois de fora. `title`, `slides` e `cta` do retorno continuam CRUS: são o que a tela
+// mostra. Só `segments` — que é o que vai ao motor de voz — passa por aqui.
+const falado = (s: string) => paraFalar(s);
+
+// A expansão CONTA no teto: "20 min" (6) vira "vinte minutos" (13), e o teto existe para o
+// vídeo não passar de ~21 s de fala. Medir o texto da tela e falar outro maior é o mesmo
+// defeito que a correção de 31/07 consertou (o fecho contava depois da conta).
+const tamanhoFalado = (partes: string[]) => partes.filter(Boolean).map(falado).join(" ").length;
+
 // Monta a fala a partir do roteiro. O fecho falado é `pergunta + FECHO_FIXO` —
 // e ele CONTA no teto (era o bug: o teto media só título+insights, o fecho entrava
 // depois e o Reel ia a ~33s; o corte então derrubava o 3º insight, justamente
@@ -68,7 +86,7 @@ export function montarFala(roteiro: ReelRoteiro): FalaMontada {
   const meio = () => (["fato", "mecanismo", "espelho"] as const).filter((k) => vivas.has(k) && r[k]);
   const total = () => {
     const fecho = [r.pergunta, FECHO_FIXO].filter(Boolean).join(" ");
-    return [r.gancho, ...meio().map((k) => r[k]), fecho].filter(Boolean).join(" ").length;
+    return tamanhoFalado([r.gancho, ...meio().map((k) => r[k]), fecho]);
   };
 
   for (const k of ORDEM_DE_CORTE) {
@@ -81,7 +99,7 @@ export function montarFala(roteiro: ReelRoteiro): FalaMontada {
   const slides = meio().map((k) => r[k]);
   const fechoFalado = [r.pergunta, FECHO_FIXO].filter(Boolean).join(" ");
   const segments = [r.gancho, ...slides, fechoFalado]
-    .map(limpa).filter(Boolean).map(comPonto);
+    .map(limpa).filter(Boolean).map(falado).map(comPonto);
 
   return { title: r.gancho, slides, cta: r.pergunta, segments, chars: total(), cortadas };
 }
@@ -98,11 +116,11 @@ export function montarFalaDeCopy(title: string, slides: string[], cta: string): 
   const cortadas: string[] = [];
   const total = () => {
     const fecho = [c, FECHO_FIXO].filter(Boolean).join(" ");
-    return [t, ...vivas, fecho].filter(Boolean).join(" ").length;
+    return tamanhoFalado([t, ...vivas, fecho]);
   };
   while (vivas.length > 1 && total() > TETO_CHARS) cortadas.push(vivas.pop() as string);
   const fechoFalado = [c, FECHO_FIXO].filter(Boolean).join(" ");
-  const segments = [t, ...vivas, fechoFalado].map(limpa).filter(Boolean).map(comPonto);
+  const segments = [t, ...vivas, fechoFalado].map(limpa).filter(Boolean).map(falado).map(comPonto);
   return { title: t, slides: vivas, cta: c, segments, chars: total(), cortadas };
 }
 

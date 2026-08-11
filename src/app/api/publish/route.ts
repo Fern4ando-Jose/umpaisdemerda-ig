@@ -19,7 +19,9 @@ import { buildRotation, topicIndexForRun, slotForRun, pickFreshTopicIndex } from
 import { editionFor } from "@/lib/edition";
 import { searchDuckDuckGo } from "@/lib/ddg";
 import { buildLiteralDirective } from "@/lib/literal-lock";
+import { formatoDaVaga, diretrizDoRedator } from "@/lib/formatos-nucleo";
 import { generateNarration } from "@/lib/narration";
+import { assinarLegenda } from "@/lib/serie";
 import { dedupeSlides } from "@/lib/slide-dedup";
 
 // Aumenta o limite de execução para 60s (Vercel Hobby permite até 300s)
@@ -37,6 +39,12 @@ interface GeneratedContent {
   instagramCaption: string;
   tags: string[];
   videoQueries?: string[]; // termos EN p/ buscar footage do Reel (opcional)
+  /**
+   * O CARIMBO DO ESQUELETO (09/08/2026): qual arquitetura esta peça seguiu. Sem ele não
+   * existe placar por formato — e sem placar não há como cumprir a regra que criou os
+   * esqueletos: formato que não performa é descartado, não melhorado.
+   */
+  formato?: string;
 }
 
 type Slot = "manha" | "tarde" | "noite";
@@ -244,9 +252,29 @@ async function generateContent(
     ? `\nESCÂNDALO DO DIA (manchete REAL do noticiário): "${newsInspiration}"\nOBRIGATÓRIO: o post é SOBRE este caso — quem lê tem de RECONHECER o escândalo: cite o órgão/instituição envolvido, a quantia (R$) quando houver e O QUE aconteceu, nas suas palavras. Ligue o caso ao MECANISMO do pilar (a casta que explora, o Estado que rouba, o servo que aplaude): o escândalo de hoje é a prova do padrão de sempre.\nPROIBIDO (régua apartidária, INVIOLÁVEL): citar nome de pessoa, partido ou sigla partidária, ou torcer para um lado — escreva "o ministro", "a excelência", "o deputado", "o partido da vez". A casta é UMA, esquerda e direita.\nCAIXA: escreva o título e os insights em CAIXA NORMAL de frase (só a inicial maiúscula) — NUNCA Title Case (não capitalize cada palavra) nem TUDO MAIÚSCULO; a tela já deixa o título em maiúsculas sozinha.\n`
     : "";
 
+  // ── O ESQUELETO DA PEÇA (09/08/2026, ordem do dono: o desenho do Instagram do Dr.
+  // Liberdade vale em todas as plataformas). Até aqui esta página escrevia cada peça LIVRE:
+  // mesma voz, arquitetura diferente a cada post. Quatro peças por dia, todas diferentes,
+  // nenhuma comparável — não havia como saber qual estrutura funciona.
+  //
+  // A chave junta o tema e o DIA, nunca o idioma. Esta conta é só BR hoje, mas a regra é a
+  // mesma que já vale no Dr. Liberdade, e pôr o idioma aqui é o defeito que faria o par
+  // divergir no dia em que a conta ES nascer.
+  //
+  // ⚠️ A VOZ DESTA PÁGINA NÃO MUDA. O esqueleto manda na ARQUITETURA (o que vem em cada
+  // tela); a sátira apartidária, a régua e o eixo da servidão voluntária continuam sendo os
+  // desta marca, e vêm depois, no mesmo prompt.
+  // A mídia sai da AUTOMAÇÃO que chamou (`ig-reels` × `ig-posts`), não do `slot` — `slot` é a
+  // hora do dia (manhã/tarde/noite), e usá-lo aqui daria esqueleto de carrossel a um Reel.
+  const midiaDaPeca = automation === "ig-reels" ? "reel" : "carrossel";
+  const esqueleto = formatoDaVaga(midiaDaPeca, `${topic}|${dayUTC()}`);
+  const diretrizFormato = diretrizDoRedator(esqueleto, midiaDaPeca);
+
   const prompt = `Você é o editor de "${acc.brand}" (${acc.handle}), uma página brasileira de CRÍTICA POLÍTICA LIBERTÁRIA, ANTI-CASTA E APARTIDÁRIA. NÃO é sátira: o objetivo não é fazer rir, é fazer o leitor ENCARAR o que está sendo feito com o dinheiro e a vida dele.
 
 IMPORTANTE — IDIOMA: gere ABSOLUTAMENTE TODA a saída (postTitle, postBody, slides, cta, instagramCaption, tags) em ${L}. NÃO misture idiomas. (videoQueries é a ÚNICA exceção: vai em inglês.)
+
+${diretrizFormato}
 ${marketSection}
 Tema: "${topic}"
 ${SLOT_INSTRUCTIONS[slot]}
@@ -319,7 +347,9 @@ Para "videoQueries" (o FUNDO de cada cena do Reel — 3 termos EM INGLÊS, 1 por
     await logSpend({ automation, platform: "anthropic", operation: "content", model: "claude-haiku-4-5-20251001", units: (data?.usage?.input_tokens ?? 0) + (data?.usage?.output_tokens ?? 0), costUsd: anthropicCost("claude-haiku-4-5-20251001", data?.usage) });
     const raw = data.content?.[0]?.text ?? "";
     try {
-      return parseContentJson<GeneratedContent>(raw);
+      // O carimbo é posto AQUI, e não pedido ao modelo: o esqueleto foi escolhido por nós,
+      // e perguntar a ele qual formato usou seria aceitar palpite no lugar de fato.
+      return { ...parseContentJson<GeneratedContent>(raw), formato: esqueleto.id };
     } catch (e) {
       lastErr = e; // JSON malformado → regenera na próxima volta
     }
@@ -779,6 +809,11 @@ export async function GET(req: NextRequest) {
       accentWords: [],
       cta: content.cta,
       caption: content.instagramCaption,
+      // O ESQUELETO com que esta peça foi escrita — segue para o `/api/publish-reel`, que
+      // o grava no livro-razão. É a metade que faltava para o `/api/placar` saber qual
+      // formato gerou qual publicação (o Reel é 3 das 4 peças do dia: sem isto o placar
+      // enxergaria só o carrossel).
+      formato: content.formato ?? null,
       kw, ed,
       videoQueries, // canônicos (compartilhados entre idiomas)
       clips,        // footage COMPARTILHADO (mesmo vídeo ES/PT); [] → fetch-footage.mjs busca no CI
@@ -924,7 +959,11 @@ export async function GET(req: NextRequest) {
         // Publicar carrossel
         let instagramPostId: string | null = null;
         try {
-          instagramPostId = await publishCarousel(content.instagramCaption, slideUrls, lang);
+          // ASSINATURA FIXA abrindo a legenda (ver `src/lib/serie.ts`): o sinal da marca
+          // repetido peça após peça é o que faz a conta ser reconhecida antes de ser lida.
+          // Enquanto o sinal desta marca não estiver escolhido, `assinarLegenda` devolve a
+          // legenda como veio — fail-open, nenhuma peça deixa de sair por causa disso.
+          instagramPostId = await publishCarousel(assinarLegenda(content.instagramCaption), slideUrls, lang);
           slotLog.instagramPostId = instagramPostId;
           slotLog.slides = slideUrls.length;
         } catch (igErr) {
@@ -944,7 +983,7 @@ export async function GET(req: NextRequest) {
         });
 
         // Livro-razão (dia,run,lang) p/ o watchdog — só conta como publicado se saiu.
-        if (instagramPostId) await recordRun(dayUTC(now), runIndex, lang, "carousel", instagramPostId, topic);
+        if (instagramPostId) await recordRun(dayUTC(now), runIndex, lang, "carousel", instagramPostId, topic, content.formato ?? null);
 
         slotLog.ok = true;
       } catch (slotErr) {

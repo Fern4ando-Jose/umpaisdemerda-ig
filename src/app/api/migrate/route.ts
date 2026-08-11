@@ -176,6 +176,17 @@ export async function GET(req: NextRequest) {
     results.push("published_runs.topic: " + String(e));
   }
 
+  // Coluna published_runs.formato (2026-08-11) — o ESQUELETO com que a peça foi escrita.
+  // É o que o `/api/placar` mede. Sem esta coluna, a biblioteca de formatos nunca vira
+  // "lista de sobreviventes": não há como saber qual esqueleto está funcionando, e a regra
+  // de podar por desempenho fica impossível de cumprir.
+  try {
+    await sql`ALTER TABLE published_runs ADD COLUMN IF NOT EXISTS formato TEXT`;
+    results.push("published_runs.formato: ok");
+  } catch (e) {
+    results.push("published_runs.formato: " + String(e));
+  }
+
   // Tabela editions — número de edição (Nº na capa) por VAGA (dia, run), o MESMO
   // p/ ES e PT (é o mesmo conteúdo traduzido). Antes o Nº vinha de COUNT(posts)+1,
   // que NÃO andava pra Reels (só carrossel grava em posts) → "Nº 102" repetia em
