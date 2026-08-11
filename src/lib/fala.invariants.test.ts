@@ -24,6 +24,71 @@ describe("o caso que o dono ouviu", () => {
   });
 });
 
+// ⛔ 2026-08-11, ordem do dono ouvindo o Reel: *"não deve ter diminutivos, como o PE, a voz
+// não sabe falar isso fica feio, já havia ocorrido"*. A peça real era «25 presos em operação
+// contra tráfico em PE».
+describe("sigla de estado não vai crua para a voz", () => {
+  it("o caso exato que o dono ouviu", () => {
+    const dito = paraFalar("25 presos em operação contra tráfico em PE.");
+    expect(dito).toContain("Pernambuco");
+    expect(dito).not.toMatch(/\bPE\b/);
+  });
+
+  it("as 27 unidades da federação, todas", () => {
+    const casos: Array<[string, string]> = [
+      ["SP", "São Paulo"], ["RJ", "Rio de Janeiro"], ["MG", "Minas Gerais"],
+      ["DF", "Distrito Federal"], ["MS", "Mato Grosso do Sul"], ["RN", "Rio Grande do Norte"],
+      ["TO", "Tocantins"], ["AM", "Amazonas"], ["SE", "Sergipe"], ["PA", "Pará"],
+    ];
+    for (const [sigla, nome] of casos) {
+      expect(paraFalar(`Operação em ${sigla} hoje.`), sigla).toContain(nome);
+    }
+  });
+
+  it("⚠️ só em CAIXA ALTA — metade das siglas é palavra comum em minúscula", () => {
+    // Trocar "se" por "Sergipe" no meio de uma frase seria muito pior que o defeito.
+    expect(paraFalar("Ninguém se importa e o pa do fogão.")).toBe("Ninguém se importa e o pa do fogão.");
+    expect(paraFalar("Ele foi ao ato.")).toBe("Ele foi ao ato.");
+  });
+
+  it("sigla de ÓRGÃO fica como está — a voz soletra, e é assim que se fala", () => {
+    // "esse-tê-éfe" é como qualquer brasileiro diz. Expandir estouraria o teto da fala.
+    const t = paraFalar("O STF decidiu e a CPI acabou.");
+    expect(t).toContain("STF");
+    expect(t).toContain("CPI");
+  });
+});
+
+describe("dinheiro e abreviação de jornal", () => {
+  it("«R$ 4 bilhões» vira «4 bilhões de reais», não «erre cifrão»", () => {
+    const t = paraFalar("Sumiram R$ 4 bilhões do orçamento.");
+    expect(t).toContain("bilhões de reais");
+    expect(t).not.toContain("R$");
+  });
+
+  it("⚠️ valor com VÍRGULA fica inteiro — «1,3 milhão», não «um,três milhão»", () => {
+    // Medido ao escrever esta regra: com `\b(\d{1,3})\b`, a vírgula é fronteira de palavra
+    // e cada dígito do decimal virava extenso. A pauta desta conta é orçamento público:
+    // valor com vírgula é o normal.
+    const t = paraFalar("A CGU achou R$ 1,3 milhão de superfaturamento.");
+    expect(t).toContain("1,3 milhão de reais");
+    expect(t).not.toContain("um,");
+  });
+
+  it("valor com ponto de milhar também fica inteiro", () => {
+    expect(paraFalar("Foram R$ 4.500 por dia.")).toContain("4.500");
+  });
+
+  it("o hífen de «ex-» corta a palavra na voz — vira «ex assessor»", () => {
+    expect(paraFalar("O ex-assessor voltou.")).toContain("ex assessor");
+  });
+
+  it("«nº» e tratamento saem por extenso", () => {
+    expect(paraFalar("Processo nº 12 arquivado.")).toContain("número");
+    expect(paraFalar("O Dr. Fulano assinou.")).toContain("Doutor");
+  });
+});
+
 describe("números por extenso", () => {
   it("na faixa que a peça usa", () => {
     expect(porExtenso(0)).toBe("zero");
