@@ -13,7 +13,10 @@ import { dayUTC, publishedRunsToday, pendingRuns } from "@/lib/run-ledger";
 // (PAT fine-grained com Actions: read+write no repo) — guardado na Vercel, NÃO no
 // serviço de cron externo. Sem o token → 500 avisando (inerte até o dono configurar).
 
-const REPO = process.env.GH_REPO || "Fern4ando-Jose/dr-libertad-site";
+// ⛔ O clone do DR deixou o default apontando para o repo DELE — se o agendador
+// externo (opção B) fosse ligado sem GH_REPO setado, o redisparo iria para o
+// dr-libertad-site em vez desta conta. O dono deste endpoint é o repo daqui.
+const REPO = process.env.GH_REPO || "Fern4ando-Jose/umpaisdemerda-ig";
 
 // run → (workflow, inputs). Espelha o mapeamento do catchup.yml. Conta única
 // PT-BR: os workflows têm nome BASE (sem sufixo de idioma), então `lang` não
