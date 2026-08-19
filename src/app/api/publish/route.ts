@@ -11,6 +11,7 @@ import {
 } from "@/lib/pauta-semana";
 import {
   montarFala, montarFalaDeCopy, normalizaRoteiro, duracaoEstimadaSeg, CAP, TETO_CHARS, FALA_MAX_SEG,
+  FALA_MIN_SEG, PISO_CHARS, CHARS_POR_SEG,
   type ReelRoteiro,
 } from "@/lib/reel-script";
 import { readContentCache, writeContentCache } from "@/lib/content-cache";
@@ -394,7 +395,7 @@ NOTÍCIA DE HOJE (manchete real do noticiário) — É SOBRE ISTO QUE VOCÊ VAI 
 
 ${SLOT_INSTRUCTIONS[slot]}
 
-O QUE VOCÊ ESTÁ PRODUZINDO: o roteiro FALADO de um Reel de ~${FALA_MAX_SEG} segundos. Uma pessoa vai LER ISSO EM VOZ ALTA e cada bloco é uma cena do vídeo. Então: frases CURTAS, faladas, sem oração subordinada, sem vírgula pra respirar. Se a frase não cabe num fôlego, ela está errada.
+O QUE VOCÊ ESTÁ PRODUZINDO: o roteiro FALADO de um Reel de ${FALA_MIN_SEG} a ${FALA_MAX_SEG} segundos de fala — escreva TODAS as 5 cenas PREENCHIDAS perto do limite de cada uma; o roteiro NÃO pode ficar mais curto que ${FALA_MIN_SEG} segundos de fala (≈${PISO_CHARS} caracteres falados). Uma pessoa vai LER ISSO EM VOZ ALTA e cada bloco é uma cena do vídeo. Então: frases CURTAS, faladas, sem oração subordinada, sem vírgula pra respirar. Se a frase não cabe num fôlego, ela está errada.
 
 AS 5 CENAS (cada uma tem um papel; não troque a ordem nem misture os papéis):
 1. GANCHO (máx ${CAP.gancho} chars) — o caso em UMA frase, já com o órgão/instituição e o número. Trava o dedo em 1 segundo. NADA de aquecimento, nada de tese genérica.
@@ -678,6 +679,15 @@ export async function GET(req: NextRequest) {
           if (!copyCobreCaso(campos, n.headline)) {
             pautaLog.cobertura = `tentativa ${tentativa}: a crítica não citou o caso`;
             reforco = `a saída não deixou claro DE QUE CASO se trata. Cite explicitamente o órgão/instituição e a quantia em R$ da manchete no gancho e no fato.`;
+            continue;
+          }
+          // ⛔ 2026-08-19 — PISO DE DURAÇÃO (ordem do dono: o reel NÃO sai curto).
+          // Roteiro falado abaixo de FALA_MIN_SEG → regenera mais longo (mesmo
+          // mecanismo das tentativas de nome/cobertura; teto de 2 tentativas).
+          const falaTeste = montarFala(limpo.roteiro);
+          if (falaTeste.chars < PISO_CHARS) {
+            pautaLog.piso = `tentativa ${tentativa}: fala ${falaTeste.chars} chars < piso ${PISO_CHARS}`;
+            reforco = `o roteiro ficou CURTO demais: a fala total precisa ter no mínimo ${FALA_MIN_SEG} segundos (≈${PISO_CHARS} caracteres falados; o seu tem ${falaTeste.chars}). Desenvolva MAIS cada uma das 5 cenas — continue frases curtas e faladas, mas preencha cada cena perto do limite dela.`;
             continue;
           }
           pautaLog.newsFront = true;

@@ -24,11 +24,11 @@ import { paraFalar } from "./fala";
 
 // Tetos por cena (chars). Somados com o fecho fixo cabem no TETO_CHARS abaixo —
 // um roteiro bem-comportado passa inteiro e o corte nunca precisa disparar.
-// ⛔ 2026-08-19 — ordem do dono: "aumentar o tempo dos reels de acordo com a carona
-// do dia, hj está muito curto". FALA_MAX_SEG 26 → 30 s e cenas 45 → 52 chars: o
-// Reel médio passa de ~22 s para ~27-28 s e o roteiro do tema do dia ganha espaço
-// para render sem o corte comer cena. Nada mais muda (cadência, voz, temas).
-export const CAP = { gancho: 52, fato: 52, mecanismo: 52, espelho: 52, pergunta: 47 } as const;
+// ⛔ 2026-08-19 (2ª ordem) — o dono quis o tempo virar PISO, não teto: "o máximo
+// seria 30 seg? se for isso pode mudar o mínimo deveria ser 30 seg". Cenas
+// 58/58/58/58/48 + fecho = ~334 chars de tela → ~360 falados ≈ 31 s de fala, e o
+// roteiro que sair ABAIXO de FALA_MIN_SEG é regenerado (ver publish/route.ts).
+export const CAP = { gancho: 58, fato: 58, mecanismo: 58, espelho: 58, pergunta: 48 } as const;
 
 // Fecho FALADO fixo (dono, 29/07/2026 — fala o nome da página e amarra com a tese).
 export const FECHO_FIXO = "Segue o Um País de Merda — amanhã o escândalo é outro.";
@@ -43,13 +43,15 @@ export const CHARS_POR_SEG = 11.6;
 // caracteres** de margem — qualquer valor em reais estourava e o corte comia o MECANISMO.
 // Como a pauta desta conta é orçamento público, isso aconteceria quase todo dia.
 //
-// ⚠️ 2026-08-19 — ordem do dono: os Reels estão curtos demais ("de acordo com a carona
-// do dia, hj está muito curto"). Número PROPOSTO: 30 s dá ~39 caracteres de folga
-// (3,4 s) para a expansão da fala e o tema do dia render por inteiro. O Reel real de
-// hoje saiu com ~23,7 s; com o teto novo a peça média fica em ~27-28 s. Reversível
-// em uma linha se o dono quiser outro número.
-export const FALA_MAX_SEG = 30;
-export const TETO_CHARS = Math.round(FALA_MAX_SEG * CHARS_POR_SEG); // 348
+// ⚠️ 2026-08-19 (2ª ordem do dono): o tempo virou PISO. FALA_MAX_SEG é o TETO
+// (limite que o roteiro nunca passa — o corte o encurta se estourar) e
+// FALA_MIN_SEG é o PISO (abaixo dele o roteiro é regenerado mais longo). Um
+// roteiro bem-comportado (CAPs somados + fecho ≈ 334 chars de tela) fala
+// ~31 s, então o Reel NÃO sai mais curto que ~30 s de fala.
+export const FALA_MAX_SEG = 34; // teto (máx): 34 s * 11.6 ≈ 394 chars
+export const FALA_MIN_SEG = 30; // piso (mín): 30 s * 11.6 ≈ 348 chars
+export const TETO_CHARS = Math.round(FALA_MAX_SEG * CHARS_POR_SEG); // 394
+export const PISO_CHARS = Math.round(FALA_MIN_SEG * CHARS_POR_SEG); // 348
 
 // Ordem de sacrifício quando o roteiro estoura o teto. NUNCA o gancho (é o que
 // segura o dedo), NUNCA o espelho (sem ele a crítica vira jornal), NUNCA a
