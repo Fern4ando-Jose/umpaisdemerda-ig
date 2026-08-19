@@ -69,8 +69,8 @@ jobs:
       #     de uma verificação OPCIONAL. Timeout curto + seguir sem falhar.
       - name: Instalar ffmpeg (opcional — nunca segura a publicação)
         run: |
-          timeout 180 sudo apt-get update -qq || echo "::warning::apt update falhou — verify-render fará fail-open"
-          timeout 180 sudo apt-get install -y -qq ffmpeg || echo "::warning::ffmpeg indisponível — verify-render fará fail-open"
+          timeout -k 5 180 sudo apt-get update -qq || echo "::warning::apt update falhou — verify-render fará fail-open"
+          timeout -k 5 180 sudo apt-get install -y -qq ffmpeg || echo "::warning::ffmpeg indisponível — verify-render fará fail-open"
 
       # 3. Instala dependências (inclui Remotion). O Remotion baixa o Chromium
       #    Headless Shell automaticamente no primeiro render.
