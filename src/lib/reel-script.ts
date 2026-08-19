@@ -24,7 +24,11 @@ import { paraFalar } from "./fala";
 
 // Tetos por cena (chars). Somados com o fecho fixo cabem no TETO_CHARS abaixo —
 // um roteiro bem-comportado passa inteiro e o corte nunca precisa disparar.
-export const CAP = { gancho: 45, fato: 45, mecanismo: 45, espelho: 45, pergunta: 40 } as const;
+// ⛔ 2026-08-19 — ordem do dono: "aumentar o tempo dos reels de acordo com a carona
+// do dia, hj está muito curto". FALA_MAX_SEG 26 → 30 s e cenas 45 → 52 chars: o
+// Reel médio passa de ~22 s para ~27-28 s e o roteiro do tema do dia ganha espaço
+// para render sem o corte comer cena. Nada mais muda (cadência, voz, temas).
+export const CAP = { gancho: 52, fato: 52, mecanismo: 52, espelho: 52, pergunta: 47 } as const;
 
 // Fecho FALADO fixo (dono, 29/07/2026 — fala o nome da página e amarra com a tese).
 export const FECHO_FIXO = "Segue o Um País de Merda — amanhã o escândalo é outro.";
@@ -39,13 +43,13 @@ export const CHARS_POR_SEG = 11.6;
 // caracteres** de margem — qualquer valor em reais estourava e o corte comia o MECANISMO.
 // Como a pauta desta conta é orçamento público, isso aconteceria quase todo dia.
 //
-// ⚠️ ESTOU PROPONDO ESTE NÚMERO: 26 s dá ~28 caracteres de folga (2,4 s), que é o pior
-// caso realista de expansão numa peça de 5 cenas. A alternativa era encurtar as frases
-// (baixar os CAPs ~9%) — preferi não mexer no tamanho da copy sem o dono pedir. O Reel
-// real de hoje saiu com 22,6 s, então isto não alonga a peça média: só evita que ela
-// perca uma cena por causa de uma palavra que a voz agora fala por extenso.
-export const FALA_MAX_SEG = 26;
-export const TETO_CHARS = Math.round(FALA_MAX_SEG * CHARS_POR_SEG); // 302
+// ⚠️ 2026-08-19 — ordem do dono: os Reels estão curtos demais ("de acordo com a carona
+// do dia, hj está muito curto"). Número PROPOSTO: 30 s dá ~39 caracteres de folga
+// (3,4 s) para a expansão da fala e o tema do dia render por inteiro. O Reel real de
+// hoje saiu com ~23,7 s; com o teto novo a peça média fica em ~27-28 s. Reversível
+// em uma linha se o dono quiser outro número.
+export const FALA_MAX_SEG = 30;
+export const TETO_CHARS = Math.round(FALA_MAX_SEG * CHARS_POR_SEG); // 348
 
 // Ordem de sacrifício quando o roteiro estoura o teto. NUNCA o gancho (é o que
 // segura o dedo), NUNCA o espelho (sem ele a crítica vira jornal), NUNCA a
