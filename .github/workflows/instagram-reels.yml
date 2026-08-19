@@ -61,8 +61,16 @@ jobs:
 
       # 2b. ffmpeg/ffprobe — o Remotion traz o próprio p/ renderizar, mas o
       #     verify-render.mjs (checagem pós-render 9:16) usa o `ffprobe` do sistema.
-      - name: Instalar ffmpeg (p/ ffprobe da verificação pós-render)
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      #     ⛔ NÃO-BLOQUEANTE desde 19/08/2026: verify-render.mjs já é fail-open
+      #     quando o ffprobe falta (PULA a checagem e deixa a peça seguir). No
+      #     incidente de 19/08 o `apt-get update` do runner travou por 5 HORAS e
+      #     derrubou o reel do dia junto com todos os redisparos do catch-up —
+      #     um apt lento/indisponível nunca pode segurar a publicação por causa
+      #     de uma verificação OPCIONAL. Timeout curto + seguir sem falhar.
+      - name: Instalar ffmpeg (opcional — nunca segura a publicação)
+        run: |
+          timeout 180 sudo apt-get update -qq || echo "::warning::apt update falhou — verify-render fará fail-open"
+          timeout 180 sudo apt-get install -y -qq ffmpeg || echo "::warning::ffmpeg indisponível — verify-render fará fail-open"
 
       # 3. Instala dependências (inclui Remotion). O Remotion baixa o Chromium
       #    Headless Shell automaticamente no primeiro render.
