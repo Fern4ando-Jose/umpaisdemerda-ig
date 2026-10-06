@@ -1,22 +1,24 @@
 {
-  "atualizado": "2026-10-05T17:34:03.530Z",
+  "atualizado": "2026-10-06T15:32:43.872Z",
   "frentes": {
     "Executivo": [
-      "Veja as propostas dos candidatos a presidente para segurança, combate à corrupção, STF, salário mínimo e outros temas",
-      "Aécio volta à disputa pelo Senado sob o peso de um histórico de investigações",
-      "Erros e acertos dos candidatos que disputam a presidência do Brasil em 2026",
-      "Celina Leão e Leandro Grass disputam 2º turno no Distrito Federal"
+      "Escândalo do Master expõe o impacto devastador da corrupção nas instituições",
+      "Flávio Bolsonaro e o risco de um presidente com esqueletos no armário"
     ],
     "Legislativo": [
-      "MP das bets já tem sugestões de mudanças no Congresso; veja emendas",
-      "PL terá maior bancada da Câmara; federação do PT mantém segundo lugar",
-      "Bolsonaristas do Senado podem tirar do STF competência criminal"
+      "Cresce número de mulheres eleitas para o Congresso Nacional",
+      "Fim da escala 6x1: Senado inicia nova etapa de discussão da PEC; veja o que falta para proposta ser aprovada",
+      "Escândalo Master pesa na urna para uns e passa batido para outros",
+      "O aumento das buscas no Google sobre o Senado no RJ"
     ],
     "Judiciário": [
-      "Penduricalhos ameaçam direitos e vencimentos da categoria",
-      "A DERROTA PARTICULAR DO SUPREMO",
-      "Gonet sinaliza não ver indícios de crimes envolvendo ministros do STF e Daniel Vorcaro",
-      "MG: criticada por Nikolas, Marília endurece tom sobre STF e cobra punições"
+      "INSS pagará salário de trabalhadoras afastadas por violência doméstica — Instituto Nacional do Seguro Social - INSS"
+    ],
+    "Crime/Narco": [
+      "Ação integrada apreende mais de 414 kg de drogas durante Operação Brasil Contra o Crime Organizado em Rolim de Moura",
+      "Candidatos com suposta ligação com o crime organizado são barrados nas eleições",
+      "TSE amplia revisão em casos de candidatos suspeitos de ligação com o crime organizado",
+      "Investigação e processos criminais: o rastro legal dos deputados da Comissão de Segurança"
     ]
   }
 }
