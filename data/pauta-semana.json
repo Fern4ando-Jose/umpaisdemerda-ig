@@ -1,16 +1,21 @@
 {
-  "atualizado": "2026-10-19T16:00:15.595Z",
+  "atualizado": "2026-10-20T13:57:21.090Z",
   "frentes": {
     "Executivo": [
-      "Flávio Bolsonaro é investigado pela PF por suspeita de lavagem de dinheiro com advogado Willer Tomaz",
-      "Checamos Lula e Flávio Bolsonaro no debate da Band",
-      "Em debate tenso, Flávio e Lula trocam acusações de corrupção e disputam economia e segurança",
-      "Vice de Flávio Bolsonaro poupou ‘big boss’ da fraude do INSS em relatório da CPMI",
-      "Lula e Flávio Bolsonaro trocam acusações sobre corrupção e segurança em 1º debate"
+      "As acusações de corrupção que envolvem a família Bolsonaro"
     ],
     "Legislativo": [
-      "Promulgadas Emendas Constitucionais sobre agentes de saúde e fim da escala 6x1",
-      "Davi Alcolumbre retira PEC da Segurança Pública da pauta desta quinta-feira"
+      "Presidente do Congresso Nacional oficializa promulgação da Emenda Constitucional 141/2026"
+    ],
+    "Judiciário": [
+      "Manual técnico busca auxiliar o Poder Judiciário na proteção dos direitos das pessoas com deficiência",
+      "Ministro Fux estende pagamento de auxílio-moradia a todos os juízes",
+      "Flávio Bolsonaro é investigado no STF por suspeita de lavagem com advogado do caso INSS",
+      "Flávio Bolsonaro é investigado em 2º inquérito no STF para apurar suspeitas de lavagem com advogado"
+    ],
+    "Crime/Narco": [
+      "TSE determina remoção de vídeo produzido com IA que associa Lula a crime organizado",
+      "PF prende deputado eleito e delegado do RJ por ligação com crime organizado"
     ]
   }
 }
