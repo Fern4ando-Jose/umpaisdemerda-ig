@@ -1,21 +1,23 @@
 {
-  "atualizado": "2026-11-14T15:24:20.801Z",
+  "atualizado": "2026-11-15T15:57:36.088Z",
   "frentes": {
+    "Executivo": [
+      "Polícia Civil de SP atua em operação contra grupo investigado por esquema bilionário de fraude fiscal",
+      "Distrito Federal: aposta na continuidade e punição adiada",
+      "Congresso aprova projeto que autoriza governo a usar R$ 26 bilhões em empréstimos para pagar Bolsa Família"
+    ],
     "Legislativo": [
-      "Senado aprova texto-base de ajuste fiscal; CNT atuou para preservar condições do transporte - Confederação Nacional do Transporte",
-      "Senado deve votar ajuste fiscal com previsão de economia de R$ 60 bi",
-      "Senado vota na terça-feira emenda que tira do pacote fiscal limite ao uso de créditos tributários"
+      "Senado aprova texto-base do pacote fiscal com impacto previsto de até R$ 56 bi",
+      "Relator, Braga diz que Orçamento de 2027 depende de novas regras"
     ],
     "Judiciário": [
-      "Judiciário e MPU querem R$ 533 milhões para pagar penduricalhos",
-      "STF analisa compensação por atividades extraordinárias de magistrados do TJ/SP",
-      "Fachin defende reforma no Judiciário para superar privilégios",
-      "Gilmar defende cautela em reforma do Judiciário e critica Lava Jato"
+      "O efeito colateral positivo do escândalo Vorcaro, segundo um integrante do STF",
+      "Um ano após prisão de Vorcaro, escândalo do Master extrapola política e põe STF sob suspeita inédita"
     ],
     "Crime/Narco": [
-      "PMSE retoma ações do Programa Brasil Contra o Crime Organizado e apresenta balanço operacional em Sergipe",
-      "PM faz operação contra o CV na Maré; criminosos usam caminhões e barricadas para bloquear vias expressas",
-      "Como facções brasileiras do crime estão cruzando as fronteiras do país e exportando violência"
+      "Governo e MP de SP reforçam ações para atingir dinheiro do crime organizado; desde 2023, ação conjunta realizou 290 operações",
+      "Maringá recebe dois helicópteros da Polícia Federal para reforçar combate ao crime nas fronteiras",
+      "Facção que expulsava moradores de Trancoso, na Bahia, é alvo de operação"
     ]
   }
 }
