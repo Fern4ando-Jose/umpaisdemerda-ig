@@ -1,20 +1,23 @@
 {
-  "atualizado": "2026-11-21T16:29:09.942Z",
+  "atualizado": "2026-11-22T16:46:31.938Z",
   "frentes": {
     "Executivo": [
-      "Governo fixa regras contra fraude e crime no mercado de gás de cozinha",
-      "Governo Lula não bloqueou Bolsa Família após eleições; vídeo é de 2023"
+      "PF investiga fraude em licitação para manutenção de veículos — Polícia Federal",
+      "Polícia Civil indicia 15 pessoas por fraude a licitações do governo do Rio Grande do Sul",
+      "Operação combate fraude em benefícios e empréstimos consignados em São Paulo — Ministério da Previdência Social",
+      "Casagrande: clubes devem pagar suas dívidas, sem recorrer ao dinheiro público"
     ],
     "Legislativo": [
-      "CCJ aprova emenda do senador Rogério que amplia oportunidades de trabalho para pessoas com deficiência"
+      "Senado aprova projeto de ajuste fiscal do governo e rejeita alterações",
+      "Senado aprova ajuste de fachada nos supersalários e preserva blindagem orçamentária"
     ],
     "Judiciário": [
-      "Fachin derruba decisão do STJ e libera continuidade do pagamento do auxílio da Vale em Brumadinho",
-      "Fachin libera auxílio a vítimas de Brumadinho após bloqueio",
-      "Brumadinho: Fachin determina retomada de auxílio a vítimas"
+      "STF libera retomada de auxílio a mais de 51 mil atingidos por tragédia em Brumadinho",
+      "STF libera retomada do auxílio emergencial de Brumadinho"
     ],
     "Crime/Narco": [
-      "Operação Brasil Contra o Crime Organizado: Polícia Civil desarticula organizações criminosas em Araguatins"
+      "Operação Cash Out: investigação aponta sonegação de mais de R$ 2 bi em esquema envolvendo casa de aposta",
+      "Operação Tentáculos: Gaeco mira o PCC com 127 mandados em MS"
     ]
   }
 }
