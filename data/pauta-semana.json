@@ -1,26 +1,28 @@
 {
-  "atualizado": "2026-11-26T18:42:43.648Z",
+  "atualizado": "2026-11-27T18:33:50.891Z",
   "frentes": {
     "Executivo": [
-      "PF combate fraude em licitações e lavagem de dinheiro no Pará — Polícia Federal",
-      "Foi vítima de fraude digital? Saiba o que fazer primeiro",
-      "Polícia Civil de SP faz operação contra empresa suspeita de captar R$ 4 bilhões de investidores por meio de fraude",
-      "Governo de Minas terá de explicar indícios de corrupção em contrato de R$ 142 milhões",
-      "Governo volta a discutir federalização do BRB"
+      "PF atua contra comércio ilegal de eletrônicos no DF e Entorno — Polícia Federal",
+      "Governo não determinou que Polícia Federal visite beneficiários do Bolsa Família • Lupa",
+      "Nome de confiança da Faria Lima, Luiz Trabuco cultivou amizade com Lula à frente do Bradesco",
+      "Governadora do DF diz que Caixa pode adquirir o BRB, envolvido no escândalo do Master",
+      "Damares questiona se governo vai usar dinheiro público para bancar ‘Lulapalooza’"
     ],
     "Legislativo": [
-      "PGR denuncia deputado Gustavo Gayer por desvio de cota parlamentar",
-      "Escala 5x2 terá transição gradual, sem redução salarial",
-      "PGR denuncia deputado Gustavo Gayer ao STF por esquema de desvio de cota parlamentar na Câmara",
-      "Missão entrega a Cleitinho projeto que restringe emendas a shows em MG",
-      "Avança no Senado aumento de penas para motoristas que matam sob efeito de álcool ou drogas"
+      "LDO de 2027 recebe 1.504 emendas de parlamentares",
+      "Comissão do Congresso aprova corte de R$ 2,1 bilhões em despesas do governo para atender emendas parlamentares",
+      "Há um mês nos EUA, Flávio Bolsonaro indica R$ 79,4 milhões em emendas",
+      "CMA aprova aumento de pena para tráfico de animais"
+    ],
+    "Judiciário": [
+      "Moraes rejeita pedido para STF indicar como devem ser custeados R$ 324 milhões em 'penduricalhos' no MPU",
+      "Fachin suspende decisão do STJ que impedia repasse de auxílio emergencial às famílias de Brumadinho"
     ],
     "Crime/Narco": [
-      "A investigação que detectou o ‘trabalho nas comunidades’ feito pelo PCC para eleger políticos em SP",
-      "Operação da Polícia Civil desarticula organizações criminosas em Araguatins",
-      "Operação da PF, Receita e MPF combate garimpo ilegal em Mato Grosso",
-      "Operação das polícias Civil e Militar mira o tráfico de drogas e o crime organizado em Avaré",
-      "Operação Protetor Brasil prende seis suspeitos de integrar o crime organizado"
+      "PGR denuncia ao STF 15 pessoas por suposta ligação com crime organizado, incluindo policiais e ex-secretário do RJ",
+      "TSE prepara medida contra infiltração do crime organizado nas eleições",
+      "Ex-Bahia, Hayner William é preso por associação ao crime organizado em operação que também teve David Corrêa como alvo",
+      "Operação contra lavagem de dinheiro do crime organizado por fintechs cumpre mandados em Joinville, Araquari e Brusque"
     ]
   }
 }
